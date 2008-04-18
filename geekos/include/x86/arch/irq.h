@@ -1,7 +1,7 @@
 /*
  * GeekOS - x86 hardware interrupt support
  *
- * Copyright (C) 2001-2007, David H. Hovemeyer <david.hovemeyer@gmail.com>
+ * Copyright (C) 2001-2008, David H. Hovemeyer <david.hovemeyer@gmail.com>
  */
 
 #ifndef ARCH_IRQ_H

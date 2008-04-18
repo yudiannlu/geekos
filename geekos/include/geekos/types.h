@@ -1,7 +1,7 @@
 /*
  * GeekOS - Basic data types
  *
- * Copyright (C) 2001-2007, David H. Hovemeyer
+ * Copyright (C) 2001-2008, David H. Hovemeyer
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
