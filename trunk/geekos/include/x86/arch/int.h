@@ -1,7 +1,7 @@
 /*
  * GeekOS - x86 register save/restore code
  *
- * Copyright (C) 2001-2007, David H. Hovemeyer <david.hovemeyer@gmail.com>
+ * Copyright (C) 2001-2008, David H. Hovemeyer <david.hovemeyer@gmail.com>
  */
 
 #ifndef ARCH_INT_H

@@ -1,7 +1,7 @@
 /*
  * GeekOS - x86 CPU support
  *
- * Copyright (c) 2001-2007, David H. Hovemeyer <david.hovemeyer@gmail.com>
+ * Copyright (c) 2001-2008, David H. Hovemeyer <david.hovemeyer@gmail.com>
  */
 
 /*

@@ -1,7 +1,7 @@
 /*
  * GeekOS - x86 kernel thread saved context
  *
- * Copyright (C) 2001-2007, David H. Hovemeyer <david.hovemeyer@gmail.com>
+ * Copyright (C) 2001-2008, David H. Hovemeyer <david.hovemeyer@gmail.com>
  */
 
 #ifndef ARCH_THREAD_H
