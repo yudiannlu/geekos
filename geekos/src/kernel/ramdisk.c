@@ -31,12 +31,11 @@
  */
 
 #define RAMDISK_BLOCK_SIZE 512
-#define RAMDISK_NUM_BLOCKS(dev) ((dev)->size / (dev)->block_size)
+#define RAMDISK_NUM_BLOCKS(dev) ((dev)->size / RAMDISK_BLOCK_SIZE)
 
 struct ramdisk_data {
 	char *buf;
 	size_t size;
-	unsigned block_size;
 };
 
 /*
@@ -59,8 +58,8 @@ void ramdisk_handle_request(void *data)
 	}
 
 	/* find extent of requested range in the ramdisk buffer */
-	ramdisk_buf = rd->buf + lba_block_offset_in_bytes(req->lba, rd->block_size);
-	copy_size = lba_range_size_in_bytes(req->num_blocks, rd->block_size);
+	ramdisk_buf = rd->buf + lba_block_offset_in_bytes(req->lba, RAMDISK_BLOCK_SIZE);
+	copy_size = lba_range_size_in_bytes(req->num_blocks, RAMDISK_BLOCK_SIZE);
 
 	/* copy the data */
 	if (req->type == BLOCKDEV_REQ_READ) {
@@ -90,8 +89,7 @@ ulong_t ramdisk_get_num_blocks(struct blockdev *dev)
 
 unsigned ramdisk_get_block_size(struct blockdev *dev)
 {
-	struct ramdisk_data *rd = dev->data;
-	return rd->block_size;
+	return RAMDISK_BLOCK_SIZE;
 }
 
 static struct blockdev_ops s_ramdisk_blockdev_ops = {
@@ -111,7 +109,6 @@ struct blockdev *ramdisk_create(void *buf, size_t size)
 	rd = mem_alloc(sizeof(struct ramdisk_data));
 	rd->buf = buf;
 	rd->size = size;
-	rd->block_size = RAMDISK_BLOCK_SIZE;
 
 	dev->data = rd;
 
