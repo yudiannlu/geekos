@@ -23,9 +23,7 @@
 
 #include <geekos/types.h>
 #include <geekos/thread.h>
-
-/* logical block address type */
-typedef u32_t lba_t;
+#include <geekos/lba.h>
 
 /* request type */
 typedef enum { BLOCKDEV_REQ_READ, BLOCKDEV_REQ_WRITE } blockdev_req_type_t;
