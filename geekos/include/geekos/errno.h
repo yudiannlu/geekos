@@ -27,7 +27,10 @@
 #define EEXIST -2      /* no such file or directory */
 #define ENOTDIR -3     /* not a directory */
 #define EINVAL -4      /* invalid argument */
+#define ENODEV -5      /* no such device */
+#define EIO -6         /* input/output error */
 
 #endif
 
 #endif /* GEEKOS_ERRNO_H */
+
