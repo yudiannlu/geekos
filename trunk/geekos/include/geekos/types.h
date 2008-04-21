@@ -23,6 +23,7 @@
 
 #ifndef ASM
 
+#include <stdbool.h>
 #include <stddef.h>
 
 typedef unsigned long u32_t;

@@ -21,7 +21,7 @@
 #ifndef GEEKOS_LIST_H
 #define GEEKOS_LIST_H
 
-#include <stdbool.h>
+#include <geekos/types.h>
 #include <geekos/kassert.h>
 
 /*

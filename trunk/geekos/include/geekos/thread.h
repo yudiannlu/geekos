@@ -25,7 +25,7 @@
 
 #ifndef ASM
 
-#include <stdbool.h>
+#include <geekos/types.h>
 #include <arch/thread.h>
 #include <geekos/types.h>
 #include <geekos/list.h>

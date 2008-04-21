@@ -21,7 +21,7 @@
 #ifndef GEEKOS_DEV_H
 #define GEEKOS_DEV_H
 
-#include <stdbool.h>
+#include <geekos/types.h>
 
 /* maximum length of a device name */
 #define DEV_NAME_MAXLEN 31
