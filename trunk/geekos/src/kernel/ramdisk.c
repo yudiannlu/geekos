@@ -50,13 +50,19 @@ void ramdisk_handle_request(void *data)
 	struct ramdisk_data *rd = req->dev->data;
 	char *ramdisk_buf;
 	size_t copy_size;
+	blockdev_req_state_t req_state;
 
-	/* Range check (TODO: handle boundary/overflow conditions) */
-	KASSERT(req->lba + req->num_blocks <= RAMDISK_NUM_BLOCKS(rd));
+	/* make sure requested range of blocks is valid */
+	if (!lba_is_range_valid(req->lba, req->num_blocks, RAMDISK_NUM_BLOCKS(rd))) {
+		req_state = BLOCKDEV_REQ_ERROR;
+		goto done;
+	}
 
-	ramdisk_buf = rd->buf + (req->lba * rd->block_size);
-	copy_size = req->num_blocks * rd->block_size;
+	/* find extent of requested range in the ramdisk buffer */
+	ramdisk_buf = rd->buf + lba_block_offset_in_bytes(req->lba, rd->block_size);
+	copy_size = lba_range_size_in_bytes(req->num_blocks, rd->block_size);
 
+	/* copy the data */
 	if (req->type == BLOCKDEV_REQ_READ) {
 		/* block read */
 		memcpy(req->buf, ramdisk_buf, copy_size);
@@ -64,9 +70,11 @@ void ramdisk_handle_request(void *data)
 		/* block write */
 		memcpy(ramdisk_buf, req->buf, copy_size);
 	}
+	req_state = BLOCKDEV_REQ_FINISHED;
 
-	/* notify that the I/O is complete */
-	blockdev_notify_complete(req, BLOCKDEV_REQ_FINISHED);
+done:
+	/* notify that the request is complete */
+	blockdev_notify_complete(req, req_state);
 }
 
 void ramdisk_post_request(struct blockdev *dev, struct blockdev_req *req)
