@@ -25,11 +25,15 @@
 #include <geekos/workqueue.h>
 #include <geekos/string.h>
 
+/*
+ * NOTES:
+ * - dev->data points to the ramdisk_data object for the device
+ */
+
 #define RAMDISK_BLOCK_SIZE 512
 #define RAMDISK_NUM_BLOCKS(dev) ((dev)->size / (dev)->block_size)
 
-struct ramdisk {
-	struct blockdev_ops *ops;
+struct ramdisk_data {
 	char *buf;
 	size_t size;
 	unsigned block_size;
@@ -43,46 +47,43 @@ struct ramdisk {
 void ramdisk_handle_request(void *data)
 {
 	struct blockdev_req *req = data;
-	struct ramdisk *dev = req->data;
-	char *ramdisk_data;
+	struct ramdisk_data *rd = req->dev->data;
+	char *ramdisk_buf;
 	size_t copy_size;
 
 	/* Range check (TODO: handle boundary/overflow conditions) */
-	KASSERT(req->lba + req->num_blocks <= RAMDISK_NUM_BLOCKS(dev));
+	KASSERT(req->lba + req->num_blocks <= RAMDISK_NUM_BLOCKS(rd));
 
-	ramdisk_data = dev->buf + (req->lba * dev->block_size);
-	copy_size = req->num_blocks * dev->block_size;
+	ramdisk_buf = rd->buf + (req->lba * rd->block_size);
+	copy_size = req->num_blocks * rd->block_size;
 
 	if (req->type == BLOCKDEV_REQ_READ) {
 		/* block read */
-		memcpy(req->buf, ramdisk_data, copy_size);
+		memcpy(req->buf, ramdisk_buf, copy_size);
 	} else {
 		/* block write */
-		memcpy(ramdisk_data, req->buf, copy_size);
+		memcpy(ramdisk_buf, req->buf, copy_size);
 	}
 
 	/* notify that the I/O is complete */
 	blockdev_notify_complete(req, BLOCKDEV_REQ_FINISHED);
 }
 
-void ramdisk_post_request(struct blockdev *dev_, struct blockdev_req *req)
+void ramdisk_post_request(struct blockdev *dev, struct blockdev_req *req)
 {
-	/* stash ptr to ramdisk device in request */
-	req->data = dev_;
-
 	/* schedule the request for later handling by the workqueue thread */
 	workqueue_schedule_work(&ramdisk_handle_request, req);
 }
 
-ulong_t ramdisk_get_num_blocks(struct blockdev *dev_)
+ulong_t ramdisk_get_num_blocks(struct blockdev *dev)
 {
-	return RAMDISK_NUM_BLOCKS((struct ramdisk *) dev_);
+	return RAMDISK_NUM_BLOCKS((struct ramdisk_data *) dev->data);
 }
 
-unsigned ramdisk_get_block_size(struct blockdev *dev_)
+unsigned ramdisk_get_block_size(struct blockdev *dev)
 {
-	struct ramdisk *dev = (struct ramdisk *) dev_;
-	return dev->block_size;
+	struct ramdisk_data *rd = dev->data;
+	return rd->block_size;
 }
 
 static struct blockdev_ops s_ramdisk_blockdev_ops = {
@@ -93,13 +94,18 @@ static struct blockdev_ops s_ramdisk_blockdev_ops = {
 
 struct blockdev *ramdisk_create(void *buf, size_t size)
 {
-	struct ramdisk *dev;
+	struct blockdev *dev;
+	struct ramdisk_data *rd;
 
-	dev = mem_alloc(sizeof(struct ramdisk));
+	dev = mem_alloc(sizeof(struct blockdev));
 	dev->ops = &s_ramdisk_blockdev_ops;
-	dev->buf = buf;
-	dev->size = size;
-	dev->block_size = RAMDISK_BLOCK_SIZE;
+	
+	rd = mem_alloc(sizeof(struct ramdisk_data));
+	rd->buf = buf;
+	rd->size = size;
+	rd->block_size = RAMDISK_BLOCK_SIZE;
 
-	return (struct blockdev *) dev;
+	dev->data = rd;
+
+	return dev;
 }
