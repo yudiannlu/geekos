@@ -57,7 +57,9 @@ struct fs_driver_ops {
 struct fs_driver {
 	struct fs_driver_ops *ops;    /* operations */
 	struct fs_driver *next;       /* link to next fs_driver */
+#if 0
 	void *fs_data;                /* for use by filesystem driver */
+#endif
 };
 
 /*
