@@ -21,7 +21,7 @@
 #ifndef GEEKOS_INT_H
 #define GEEKOS_INT_H
 
-#include <stdbool.h>
+#include <geekos/types.h>
 #include <geekos/kassert.h>
 
 #ifndef ASM
