@@ -1,3 +1,5 @@
+#summary How to write robust error handling code
+
 =Error Handling in GeekOS=
 
 All GeekOS functions that can fail should return an
