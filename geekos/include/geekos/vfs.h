@@ -47,7 +47,8 @@ DECLARE_LIST(inode_list, inode);
  */
 struct fs_driver_ops {
 	const char *(*get_name)(struct fs_driver *fs);
-	int (*create_instance)(struct fs_driver *fs, const char *init, struct fs_instance **p_instance);
+	int (*create_instance)(
+		struct fs_driver *fs, const char *init, const char *opts, struct fs_instance **p_instance);
 };
 
 /*
