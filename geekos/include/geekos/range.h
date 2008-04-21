@@ -20,8 +20,8 @@
 #ifndef RANGE_H
 #define RANGE_H
 
-static unsigned range_umin(unsigned a, unsigned b);
-static unsigned range_umax(unsigned a, unsigned b);
+unsigned range_umin(unsigned a, unsigned b);
+unsigned range_umax(unsigned a, unsigned b);
 
 #endif /* RANGE_H */
 
