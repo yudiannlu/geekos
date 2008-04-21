@@ -126,15 +126,22 @@ int dev_register_blockdev(const char *name, struct blockdev *dev)
 /*
  * Find a block device.
  */
-struct blockdev *dev_find_blockdev(const char *name)
+int dev_find_blockdev(const char *name, struct blockdev **p_dev)
 {
 	struct dev_find_callback_data data = {
 		.type = DEV_BLOCK,
 		.name = name,
 		.result = 0,
 	};
+
 	dev_enumerate(&dev_find_callback, &data);
-	return data.result;
+
+	if (!data.result) {
+		return ENODEV;
+	}
+
+	*p_dev = data.result;
+	return 0;
 }
 
 /*

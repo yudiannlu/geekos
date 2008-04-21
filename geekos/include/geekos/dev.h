@@ -39,7 +39,7 @@ struct blockdev;
 
 /* functions */
 int dev_register_blockdev(const char *name, struct blockdev *dev);
-struct blockdev *dev_find_blockdev(const char *name);
+int dev_find_blockdev(const char *name, struct blockdev **p_dev);
 void dev_enumerate(dev_callback_t *callback, void *data);
 
 #endif /* GEEKOS_DEV_H */
