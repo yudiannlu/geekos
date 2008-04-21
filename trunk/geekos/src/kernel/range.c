@@ -19,6 +19,9 @@
 
 #include <geekos/range.h>
 
+/*
+ * Return the minimum of two unsigned values.
+ */
 unsigned range_umin(unsigned a, unsigned b)
 {
 	if (a < b) {
@@ -28,6 +31,9 @@ unsigned range_umin(unsigned a, unsigned b)
 	}
 }
 
+/*
+ * Return the maximum of two unsigned values.
+ */
 unsigned range_umax(unsigned a, unsigned b)
 {
 	if (a > b) {
@@ -35,4 +41,17 @@ unsigned range_umax(unsigned a, unsigned b)
 	} else {
 		return b;
 	}
+}
+
+/*
+ * Return true iff start + num <= total, false otherwise,
+ * correctly accounting for possible overflow conditions.
+ */
+bool range_is_valid_u32(u32_t start, u32_t num, u32_t total)
+{
+	if (num > total) {
+		return false;
+	}
+
+	return start <= (total - num);
 }
