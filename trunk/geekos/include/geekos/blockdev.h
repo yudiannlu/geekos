@@ -47,6 +47,7 @@ struct blockdev_req {
 	blockdev_req_type_t type;      /* request type */
 	blockdev_req_state_t state;    /* state of request */
 	struct thread_queue waitqueue; /* queue in which to wait for completion */
+	struct blockdev *dev;          /* the block device */
 	void *data;                    /* scratch pointer for use by driver */
 };
 
@@ -57,6 +58,7 @@ struct blockdev_ops {
 	void (*post_request)(struct blockdev *dev, struct blockdev_req *req);
 	ulong_t (*get_num_blocks)(struct blockdev *dev);
 	unsigned (*get_block_size)(struct blockdev *dev);
+	int (*close)(struct blockdev *dev);
 };
 
 /*
@@ -64,6 +66,7 @@ struct blockdev_ops {
  */
 struct blockdev {
 	struct blockdev_ops *ops;
+	void *data; /* for use by driver */
 };
 
 /* block device functions */
@@ -73,4 +76,11 @@ blockdev_req_state_t blockdev_wait_for_completion(struct blockdev_req *req);
 blockdev_req_state_t blockdev_post_and_wait(struct blockdev *dev, struct blockdev_req *req);
 void blockdev_notify_complete(struct blockdev_req *req, blockdev_req_state_t completed_state);
 
+int blockdev_read_sync(struct blockdev *dev, lba_t lba, unsigned num_blocks, void *buf);
+int blockdev_write_sync(struct blockdev *dev, lba_t lba, unsigned num_blocks, void *buf);
+
+unsigned blockdev_get_block_size(struct blockdev *dev);
+int blockdev_close(struct blockdev *dev);
+
 #endif /* ifndef GEEKOS_BLOCKDEV_H */
+

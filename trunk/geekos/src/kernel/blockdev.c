@@ -21,6 +21,26 @@
 #include <geekos/blockdev.h>
 #include <geekos/mem.h>
 #include <geekos/int.h>
+#include <geekos/errno.h>
+
+/* ------------------- private implementation ------------------- */
+
+static int blockdev_issue_sync(
+	struct blockdev *dev, lba_t lba, unsigned num_blocks, void *buf, blockdev_req_type_t type)
+{
+	struct blockdev_req *req;
+	blockdev_req_state_t state;
+
+	req = blockdev_create_request(lba, num_blocks, buf, type);
+	state = blockdev_post_and_wait(dev, req);
+
+	/* FIXME: could we produce a more meaningful error code? */
+	KASSERT(state == BLOCKDEV_REQ_FINISHED || state == BLOCKDEV_REQ_ERROR);
+	mem_free(req);
+	return state == BLOCKDEV_REQ_FINISHED ? 0 : EIO;
+}
+
+/* ------------------- public interface ------------------- */
 
 struct blockdev_req *blockdev_create_request(lba_t lba, unsigned num_blocks, void *buf, blockdev_req_type_t type)
 {
@@ -33,6 +53,7 @@ struct blockdev_req *blockdev_create_request(lba_t lba, unsigned num_blocks, voi
 	req->type = type;
 	req->state = BLOCKDEV_REQ_PENDING;
 	thread_queue_clear(&req->waitqueue);
+	req->dev = 0;
 	req->data = 0;
 
 	return req;
@@ -40,6 +61,7 @@ struct blockdev_req *blockdev_create_request(lba_t lba, unsigned num_blocks, voi
 
 void blockdev_post_request(struct blockdev *dev, struct blockdev_req *req)
 {
+	req->dev = dev;
 	dev->ops->post_request(dev, req);
 }
 
@@ -66,3 +88,24 @@ void blockdev_notify_complete(struct blockdev_req *req, blockdev_req_state_t com
 	thread_wakeup(&req->waitqueue);
 	int_end_atomic(iflag);
 }
+
+int blockdev_read_sync(struct blockdev *dev, lba_t lba, unsigned num_blocks, void *buf)
+{
+	return blockdev_issue_sync(dev, lba, num_blocks, buf, BLOCKDEV_REQ_READ);
+}
+
+int blockdev_write_sync(struct blockdev *dev, lba_t lba, unsigned num_blocks, void *buf)
+{
+	return blockdev_issue_sync(dev, lba, num_blocks, buf, BLOCKDEV_REQ_WRITE);
+}
+
+unsigned blockdev_get_block_size(struct blockdev *dev)
+{
+	return dev->ops->get_block_size(dev);
+}
+
+int blockdev_close(struct blockdev *dev)
+{
+	return dev->ops->close(dev);
+}
+
