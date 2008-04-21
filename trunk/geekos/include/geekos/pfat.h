@@ -57,4 +57,6 @@ struct pfat_entry {
 	char name[PFAT_ENTRY_SIZE - 8];
 };
 
+int pfat_init(void);
+
 #endif /* GEEKOS_PFAT_H */
