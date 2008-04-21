@@ -19,7 +19,7 @@
 
 #include <geekos/range.h>
 
-static unsigned range_umin(unsigned a, unsigned b)
+unsigned range_umin(unsigned a, unsigned b)
 {
 	if (a < b) {
 		return a;
@@ -28,7 +28,7 @@ static unsigned range_umin(unsigned a, unsigned b)
 	}
 }
 
-static unsigned range_umax(unsigned a, unsigned b)
+unsigned range_umax(unsigned a, unsigned b)
 {
 	if (a > b) {
 		return a;
@@ -36,4 +36,3 @@ static unsigned range_umax(unsigned a, unsigned b)
 		return b;
 	}
 }
-
