@@ -56,6 +56,14 @@ struct node_type *list_type##_prev(struct node_type *node)
 	struct node_type *list_type##_prev; \
 	struct node_type *list_type##_next
 
+/* Define implementation of listtype##_init function */
+#define IMPLEMENT_LIST_INIT(list_type, node_type) \
+void list_type##_init(struct list_type *list) \
+{ \
+	(list)->head = 0; \
+	(list)->tail = 0; \
+}
+
 /* Define implementation of list_type##_is_empty function */
 #define IMPLEMENT_LIST_IS_EMPTY(list_type, node_type) \
 bool list_type##_is_empty(struct list_type *list) \
