@@ -21,6 +21,15 @@
 #include <geekos/lba.h>
 
 /*
+ * Create an LBA from a number.
+ */
+lba_t lba_from_num(u32_t num)
+{
+	lba_t lba = { .val = num };
+	return lba;
+}
+
+/*
  * Is the range of blocks described by given start address and
  * number of blocks valid, so that each block in the range
  * has an address less than the total number of blocks?
