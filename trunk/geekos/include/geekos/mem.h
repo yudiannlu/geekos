@@ -1,6 +1,5 @@
 /*
  * GeekOS - memory allocation
- *
  * Copyright (C) 2001-2008, David H. Hovemeyer <david.hovemeyer@gmail.com>
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -47,6 +46,9 @@ DECLARE_LIST(frame_list, frame);
 struct frame {
 	frame_state_t state;
 	DEFINE_LINK(frame_list, frame);
+
+	/* if the frame is part of a vm_obj, its page number in that vm_obj */
+	u32_t vm_obj_page_num;
 };
 
 void mem_clear_bss(void);
