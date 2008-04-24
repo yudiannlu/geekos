@@ -1,6 +1,5 @@
 /*
  * GeekOS - generic intrusive list macros
- *
  * Copyright (C) 2001-2008, David H. Hovemeyer <david.hovemeyer@gmail.com>
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -34,7 +33,6 @@ struct node_type; \
 struct list_type { \
 	struct node_type *head, *tail; \
 }; \
-void list_type##_init(struct list_type *list); \
 bool list_type##_is_empty(struct list_type *list); \
 void list_type##_clear(struct list_type *list); \
 void list_type##_append(struct list_type *list, struct node_type *node); \
@@ -55,14 +53,6 @@ struct node_type *list_type##_prev(struct node_type *node)
 #define DEFINE_LINK(list_type, node_type) \
 	struct node_type *list_type##_prev; \
 	struct node_type *list_type##_next
-
-/* Define implementation of listtype##_init function */
-#define IMPLEMENT_LIST_INIT(list_type, node_type) \
-void list_type##_init(struct list_type *list) \
-{ \
-	(list)->head = 0; \
-	(list)->tail = 0; \
-}
 
 /* Define implementation of list_type##_is_empty function */
 #define IMPLEMENT_LIST_IS_EMPTY(list_type, node_type) \
@@ -204,7 +194,6 @@ struct node_type *list_type##_prev(struct node_type *node) \
 
 /* Define implementations of all list accessor functions. */
 #define IMPLEMENT_LIST(list_type, node_type) \
-IMPLEMENT_LIST_INIT(list_type, node_type) \
 IMPLEMENT_LIST_IS_EMPTY(list_type, node_type) \
 IMPLEMENT_LIST_CLEAR(list_type, node_type) \
 IMPLEMENT_LIST_APPEND(list_type, node_type) \
