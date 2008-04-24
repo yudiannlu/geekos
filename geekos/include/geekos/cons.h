@@ -43,9 +43,10 @@ struct console_ops {
 /* console base class */
 struct console {
 	struct console_ops *ops;
+	void *p;   /* for use by underlying console implementation */
 };
 
-void cons_init(void);
+int cons_init(void);
 void cons_clear(void);
 int cons_numrows(void);
 int cons_numcols(void);
@@ -58,8 +59,12 @@ void cons_cleartoeol(void);
 
 void cons_printf(const char *fmt, ...) __attribute__ ((format (printf,1,2)));
 
+#if 0
+int cons_create(struct console_ops *ops, void *p, struct console **p_cons);
+#endif
+
 /* Architecture-dependent functions */
-struct console *cons_getdefault(void);
+int cons_getdefault(struct console **p_cons);
 
 #endif /* ASM */
 

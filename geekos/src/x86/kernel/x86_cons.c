@@ -23,8 +23,8 @@
 #include <arch/ioport.h>
 
 /* prototypes */
-void x86cons_movecurs(struct console *cons_, int row, int col);
-void x86cons_cleartoeol(struct console *cons_);
+void x86cons_movecurs(struct console *cons, int row, int col);
+void x86cons_cleartoeol(struct console *cons);
 
 /* ----------------------------------------------------------------------
  * Implementation
@@ -52,13 +52,16 @@ void x86cons_cleartoeol(struct console *cons_);
 
 #define DEFAULT_ATTR 7
 
+/*
+ * The cons->p field points to an instance of
+ * this struct.
+ */
 struct x86cons {
-	struct console_ops *ops;
-	int y, x;
-	u8_t attr;
+	int y, x;   /* current cursor location */
+	u8_t attr;  /* current attribute */
 };
 
-static void x86cons_scroll(struct x86cons *cons)
+static void x86cons_scroll(void)
 {
 	int j;
 
@@ -77,7 +80,7 @@ static void x86cons_newline(struct x86cons *cons)
 
 	/* scroll? */
 	if (cons->y == VGA_NUMROWS - 1) {
-		x86cons_scroll(cons);
+		x86cons_scroll();
 	} else {
 		cons->y++;
 	}
@@ -129,85 +132,85 @@ static void x86cons_updatecurs(struct x86cons *cons)
  * Interface
  * ---------------------------------------------------------------------- */
 
-void x86cons_clear(struct console *cons_)
+void x86cons_clear(struct console *cons)
 {
 	memset((void *) VGA_VIDMEM, '\0', VGA_NUMROWS * VGA_BYTES_PER_ROW);
-	x86cons_movecurs(cons_, 0, 0);
+	x86cons_movecurs(cons, 0, 0);
 }
 
-int x86cons_numrows(struct console *cons_)
+int x86cons_numrows(struct console *cons)
 {
 	return VGA_NUMROWS;
 }
 
-int x86cons_numcols(struct console *cons_)
+int x86cons_numcols(struct console *cons)
 {
 	return VGA_NUMCOLS;
 }
 
-int x86cons_getx(struct console *cons_)
+int x86cons_getx(struct console *cons)
 {
-	struct x86cons *cons = (struct x86cons *) cons_;
-	return cons->x;
+	struct x86cons *xcons = cons->p;
+	return xcons->x;
 }
 
-int x86cons_gety(struct console *cons_)
+int x86cons_gety(struct console *cons)
 {
-	struct x86cons *cons = (struct x86cons *) cons_;
-	return cons->y;
+	struct x86cons *xcons = cons->p;
+	return xcons->y;
 }
 
-void x86cons_movecurs(struct console *cons_, int row, int col)
+void x86cons_movecurs(struct console *cons, int row, int col)
 {
-	struct x86cons *cons = (struct x86cons *) cons_;
+	struct x86cons *xcons = cons->p;
 
 	if (VALID_ROW(row) && VALID_COL(col)) {
 		/* update location and update cursor */
-		cons->y = row;
-		cons->x = col;
-		x86cons_updatecurs(cons);
+		xcons->y = row;
+		xcons->x = col;
+		x86cons_updatecurs(xcons);
 	}
 }
 
-void x86cons_putchar(struct console *cons_, int ch)
+void x86cons_putchar(struct console *cons, int ch)
 {
-	struct x86cons *cons = (struct x86cons *) cons_;
+	struct x86cons *xcons = cons->p;
 	int nspace;
 
 	switch (ch) {
 	case '\t':
-		nspace = 8 - (cons->x % CONS_TABSIZE);
+		nspace = 8 - (xcons->x % CONS_TABSIZE);
 		while (nspace-- > 0) {
-			x86cons_putgraphic(cons, ' ');
+			x86cons_putgraphic(xcons, ' ');
 		}
 		break;
 
 	case '\n':
-		x86cons_cleartoeol(cons_);
-		x86cons_newline(cons);
+		x86cons_cleartoeol(cons);
+		x86cons_newline(xcons);
 		break;
 
 	default:
-		x86cons_putgraphic(cons, ch);
+		x86cons_putgraphic(xcons, ch);
 		break;
 	}
 
-	x86cons_updatecurs(cons);
+	x86cons_updatecurs(xcons);
 }
 
-void x86cons_write(struct console *cons_, const char *str)
+void x86cons_write(struct console *cons, const char *str)
 {
 	while (*str != '\0') {
-		x86cons_putchar(cons_, *str++);
+		x86cons_putchar(cons, *str++);
 	}
 }
 
-void x86cons_cleartoeol(struct console *cons_)
+void x86cons_cleartoeol(struct console *cons)
 {
-	struct x86cons *cons = (struct x86cons *) cons_;
+	struct x86cons *xcons = cons->p;
 
-	int toclear = VGA_NUMCOLS - cons->x;
-	memset(CUR_ADDR(cons), '\0', toclear * 2);
+	int toclear = VGA_NUMCOLS - xcons->x;
+	memset(CUR_ADDR(xcons), '\0', toclear * 2);
 }
 
 static struct console_ops s_x86cons_ops = {
@@ -222,14 +225,19 @@ static struct console_ops s_x86cons_ops = {
 	.cleartoeol = &x86cons_cleartoeol,
 };
 
-static struct x86cons s_instance = {
-	.ops = &s_x86cons_ops,
+static struct x86cons s_xcons = {
 	.y = 0,
 	.x = 0,
 	.attr = DEFAULT_ATTR,
 };
 
-struct console *cons_getdefault(void)
+static struct console s_instance = {
+	.ops = &s_x86cons_ops,
+	.p = &s_xcons,
+};
+
+int cons_getdefault(struct console **p_cons)
 {
-	return (struct console *) &s_instance;
+	*p_cons = &s_instance;
+	return 0;
 }
