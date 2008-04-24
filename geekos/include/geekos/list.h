@@ -204,6 +204,7 @@ struct node_type *list_type##_prev(struct node_type *node) \
 
 /* Define implementations of all list accessor functions. */
 #define IMPLEMENT_LIST(list_type, node_type) \
+IMPLEMENT_LIST_INIT(list_type, node_type) \
 IMPLEMENT_LIST_IS_EMPTY(list_type, node_type) \
 IMPLEMENT_LIST_CLEAR(list_type, node_type) \
 IMPLEMENT_LIST_APPEND(list_type, node_type) \
