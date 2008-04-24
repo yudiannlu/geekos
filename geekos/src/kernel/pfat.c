@@ -1,6 +1,5 @@
 /*
  * GeekOS - PFAT filesystem
- *
  * Copyright (C) 2001-2008, David H. Hovemeyer <david.hovemeyer@gmail.com>
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -21,11 +20,16 @@
 /* PFAT - a simple FAT-like filesystem */
 
 #include <geekos/vfs.h>
+#include <geekos/dev.h>
+#include <geekos/blockdev.h>
+#include <geekos/mem.h>
+#include <geekos/errno.h>
+#include <geekos/range.h>
 #include <geekos/pfat.h>
 
 /*
  * NOTES:
- * - fs_data field of fs_instance object points to pfat_instance object
+ * - p field of fs_instance object points to pfat_instance object
  */
 
 /* ------------------- data types ------------------- */
@@ -39,7 +43,7 @@ struct pfat_instance {
 };
 
 /*
- * Implementation of fs_driver_ops functions.
+ * fs_driver_ops functions.
  */
 static const char *pfat_get_name(struct fs_driver *driver);
 static int pfat_create_instance(
@@ -54,10 +58,24 @@ static struct fs_driver s_pfat_driver = {
 	.ops = &s_pfat_driver_ops,
 };
 
+/*
+ * fs_instance_ops functions
+ */
+static int pfat_get_root(struct fs_instance *instance, struct inode **p_dir);
+static int pfat_open(struct fs_instance *instance, const char *path, int mode, struct inode **p_inode);
+static int pfat_close(struct fs_instance *instance);
+
+static struct fs_instance_ops s_pfat_instance_ops = {
+	.get_root = &pfat_get_root,
+	.open = &pfat_open,
+	.close = &pfat_close,
+};
+
 /* ------------------- private implementation ------------------- */
 
 static int pfat_read_super(struct blockdev *dev, struct pfat_superblock **p_super)
 {
+	int rc;
 	struct pfat_superblock *super = 0;
 	unsigned dev_block_size;
 	unsigned super_bufsize;
@@ -68,7 +86,7 @@ static int pfat_read_super(struct blockdev *dev, struct pfat_superblock **p_supe
 	/* read superblock into a buffer */
 	super_bufsize = range_umax(sizeof(struct pfat_superblock), dev_block_size);
 	super = mem_alloc(super_bufsize);
-	rc = blockdev_read_sync(dev, 0, super_bufsize / dev_block_size);
+	rc = blockdev_read_sync(dev, lba_from_num(0), super_bufsize / dev_block_size, super);
 	if (rc != 0) {
 		goto fail;
 	}
@@ -96,6 +114,7 @@ static int pfat_create_instance(
 	struct fs_driver *fs, const char *init, const char *opts, struct fs_instance **p_instance)
 {
 	int rc;
+	struct fs_instance *fs_inst;
 	struct blockdev *dev = 0;
 	struct pfat_superblock *super = 0;
 	struct pfat_instance *inst_data = 0;
@@ -103,9 +122,8 @@ static int pfat_create_instance(
 	KASSERT(fs == &s_pfat_driver);
 
 	/* the init parameter is the name of the block device containing the fs */
-	dev = dev_find_blockdev(init);
-	if (dev == 0) {
-		rc = ENODEV;
+	rc = dev_find_blockdev(init, &dev);
+	if (rc != 0) {
 		goto done;
 	}
 
@@ -126,13 +144,33 @@ static int pfat_create_instance(
 	inst_data->dev = dev;
 	inst_data->super = super;
 
+	rc = vfs_fs_instance_create(&s_pfat_instance_ops, inst_data, &fs_inst);
+
 done:
 	if (rc != 0) {
-		dev_close(dev);
+		blockdev_close(dev);
 		mem_free(super);
 		mem_free(inst_data);
 	}
 	return rc;
+}
+
+static int pfat_get_root(struct fs_instance *instance, struct inode **p_dir)
+{
+	KASSERT(false);
+	return ENOTSUP;
+}
+
+static int pfat_open(struct fs_instance *instance, const char *path, int mode, struct inode **p_inode)
+{
+	KASSERT(false);
+	return ENOTSUP;
+}
+
+static int pfat_close(struct fs_instance *instance)
+{
+	KASSERT(false);
+	return ENOTSUP;
 }
 
 /* ------------------- public interface ------------------- */
