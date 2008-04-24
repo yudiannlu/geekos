@@ -27,6 +27,7 @@
 /*typedef u32_t lba_t;*/
 typedef struct { u32_t val; } lba_t;
 
+lba_t lba_from_num(u32_t num);
 bool lba_is_range_valid(lba_t start, u32_t num_blocks, u32_t total_blocks);
 size_t lba_block_offset_in_bytes(lba_t lba, unsigned block_size);
 size_t lba_range_size_in_bytes(u32_t num_blocks, unsigned block_size);
