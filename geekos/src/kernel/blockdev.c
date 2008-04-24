@@ -106,6 +106,10 @@ unsigned blockdev_get_block_size(struct blockdev *dev)
 
 int blockdev_close(struct blockdev *dev)
 {
+	if (dev == 0) {
+		return 0;
+	}
+
 	return dev->ops->close(dev);
 }
 
