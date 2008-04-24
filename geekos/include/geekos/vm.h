@@ -22,6 +22,7 @@
 
 #include <geekos/types.h>
 #include <geekos/mem.h>
+#include <geekos/synch.h>
 
 struct vm_pager_ops;
 
@@ -32,7 +33,7 @@ struct vm_pager_ops;
  */
 struct vm_pager {
 	struct vm_pager_ops *ops;
-	void *data; /* for use by underlying pager implementation */	
+	void *p; /* for use by underlying pager implementation */	
 };
 
 /*
@@ -51,13 +52,27 @@ struct vm_pager_ops {
  * an underlying data store (the pager).
  */
 struct vm_obj {
+	struct mutex lock;
+	int n_readers;
+	int n_writers;
 	struct frame_list pagelist; /* list of pages containing data from underlying data store */
 	struct vm_pager *pager;    /* the underlying data store */
 };
 
 /*
+ * Access mode for locking a page within a VM object.
+ */
+typedef enum {
+	VM_OBJ_READ,
+	VM_OBJ_WRITE,
+} vm_obj_access_t;
+
+/*
  * Functions
  */
 int vm_create_vm_obj(struct vm_pager *pager, struct vm_obj **p_obj);
+
+int vm_lock_page(struct vm_obj *obj, u32_t page_num, vm_obj_access_t access, struct frame **p_frame);
+int vm_unlock_page(struct vm_obj *obj, vm_obj_access_t access, struct frame *frame);
 
 #endif /* GEEKOS_VM_H */
