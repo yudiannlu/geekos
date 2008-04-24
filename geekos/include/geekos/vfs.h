@@ -1,6 +1,5 @@
 /*
  * GeekOS - virtual filesystem (VFS)
- *
  * Copyright (C) 2001-2008, David H. Hovemeyer <david.hovemeyer@gmail.com>
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -57,9 +56,6 @@ struct fs_driver_ops {
 struct fs_driver {
 	struct fs_driver_ops *ops;    /* operations */
 	struct fs_driver *next;       /* link to next fs_driver */
-#if 0
-	void *fs_data;                /* for use by filesystem driver */
-#endif
 };
 
 /*
@@ -77,7 +73,7 @@ struct fs_instance_ops {
 struct fs_instance {
 	struct fs_instance_ops *ops;  /* operations */
 	int refcount;                 /* reference count */
-	void *fs_data;                /* for use by filesystem driver */
+	void *p;                      /* for use by filesystem driver */
 };
 
 /*
@@ -109,10 +105,7 @@ struct inode {
 	int refcount;                 /* reference count */
 	bool busy;                    /* true if a lookup is in progress */
 	struct condition inode_cond;  /* condition to serialize lookups; must hold fs mutex */
-#ifdef notyet
-	struct pagecache *pagecache;  /* pagecache for file/dir data */
-#endif
-	void *fs_data;                /* for use by filesystem driver */
+	void *p;                      /* for use by filesystem driver */
 };
 
 int vfs_register_fs_driver(struct fs_driver *fs);
@@ -125,6 +118,8 @@ void vfs_release_ref(struct inode *inode);
 int vfs_read(struct inode *inode, void *buf, size_t len);
 int vfs_write(struct inode *inode, void *buf, size_t len);
 int vfs_close(struct inode *inode);
+
+int vfs_fs_instance_create(struct fs_instance_ops *ops, void *p, struct fs_instance **p_fs_inst);
 
 #endif /* ifndef ASM */
 

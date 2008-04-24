@@ -387,3 +387,16 @@ int vfs_close(struct inode *inode)
 	/* TODO */
 	return -1;
 }
+
+int vfs_fs_instance_create(struct fs_instance_ops *ops, void *p, struct fs_instance **p_fs_inst)
+{
+	struct fs_instance *fs_inst;
+
+	fs_inst = mem_alloc(sizeof(struct fs_instance));
+	fs_inst->ops = ops;
+	fs_inst->refcount = 0;
+	fs_inst->p = p;
+
+	*p_fs_inst = fs_inst;
+	return 0;
+}
