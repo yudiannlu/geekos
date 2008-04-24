@@ -24,7 +24,7 @@ int vm_create_vm_obj(struct vm_pager *pager, struct vm_obj **p_obj)
 	struct vm_obj *obj;
 
 	obj = mem_alloc(sizeof(struct vm_obj));
-	frame_list_init(&obj->pagelist);
+	frame_list_clear(&obj->pagelist);
 	obj->pager = pager;
 
 	*p_obj = obj;
