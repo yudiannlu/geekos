@@ -25,7 +25,7 @@
 
 #define HEAP_SIZE (128*1024)
 
-IMPLEMENT_LIST_INIT(frame_list, frame)
+IMPLEMENT_LIST_CLEAR(frame_list, frame)
 IMPLEMENT_LIST_APPEND(frame_list, frame)
 IMPLEMENT_LIST_IS_EMPTY(frame_list, frame)
 IMPLEMENT_LIST_REMOVE_FIRST(frame_list, frame)
