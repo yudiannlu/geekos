@@ -1,6 +1,5 @@
 /*
  * GeekOS - error codes
- *
  * Copyright (C) 2001-2008, David H. Hovemeyer <david.hovemeyer@gmail.com>
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -29,8 +28,8 @@
 #define EINVAL -4      /* invalid argument */
 #define ENODEV -5      /* no such device */
 #define EIO -6         /* input/output error */
+#define ENOTSUP -7     /* operation not supported */
 
 #endif
 
 #endif /* GEEKOS_ERRNO_H */
-
