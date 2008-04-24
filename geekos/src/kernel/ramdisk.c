@@ -24,6 +24,7 @@
 #include <geekos/kassert.h>
 #include <geekos/workqueue.h>
 #include <geekos/string.h>
+#include <geekos/errno.h>
 
 /*
  * NOTES:
@@ -45,15 +46,15 @@ struct ramdisk_data {
  */
 void ramdisk_handle_request(void *data)
 {
+	int rc;
 	struct blockdev_req *req = data;
 	struct ramdisk_data *rd = req->dev->data;
 	char *ramdisk_buf;
 	size_t copy_size;
-	blockdev_req_state_t req_state;
 
 	/* make sure requested range of blocks is valid */
 	if (!lba_is_range_valid(req->lba, req->num_blocks, RAMDISK_NUM_BLOCKS(rd))) {
-		req_state = BLOCKDEV_REQ_ERROR;
+		rc = EINVAL; /* XXX - appropriate? */
 		goto done;
 	}
 
@@ -69,11 +70,13 @@ void ramdisk_handle_request(void *data)
 		/* block write */
 		memcpy(ramdisk_buf, req->buf, copy_size);
 	}
-	req_state = BLOCKDEV_REQ_FINISHED;
+
+	/* success! */
+	rc = 0;
 
 done:
 	/* notify that the request is complete */
-	blockdev_notify_complete(req, req_state);
+	blockdev_notify_complete(req, rc);
 }
 
 void ramdisk_post_request(struct blockdev *dev, struct blockdev_req *req)

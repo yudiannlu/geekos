@@ -1,6 +1,5 @@
 /*
  * GeekOS - block devices
- *
  * Copyright (C) 2001-2008, David H. Hovemeyer <david.hovemeyer@gmail.com>
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -33,11 +32,11 @@ static int blockdev_issue_sync(
 
 	req = blockdev_create_request(lba, num_blocks, buf, type);
 	state = blockdev_post_and_wait(dev, req);
+	KASSERT(state == BLOCKDEV_REQ_FINISHED);
 
-	/* FIXME: could we produce a more meaningful error code? */
-	KASSERT(state == BLOCKDEV_REQ_FINISHED || state == BLOCKDEV_REQ_ERROR);
 	mem_free(req);
-	return state == BLOCKDEV_REQ_FINISHED ? 0 : EIO;
+
+	return req->rc;
 }
 
 /* ------------------- public interface ------------------- */
@@ -52,6 +51,7 @@ struct blockdev_req *blockdev_create_request(lba_t lba, unsigned num_blocks, voi
 	req->buf = buf;
 	req->type = type;
 	req->state = BLOCKDEV_REQ_PENDING;
+	req->rc = 0;
 	thread_queue_clear(&req->waitqueue);
 	req->dev = 0;
 	req->data = 0;
@@ -65,26 +65,27 @@ void blockdev_post_request(struct blockdev *dev, struct blockdev_req *req)
 	dev->ops->post_request(dev, req);
 }
 
-blockdev_req_state_t blockdev_wait_for_completion(struct blockdev_req *req)
+int blockdev_wait_for_completion(struct blockdev_req *req)
 {
 	bool iflag = int_begin_atomic();
 	while (req->state == BLOCKDEV_REQ_PENDING) {
 		thread_wait(&req->waitqueue);
 	}
 	int_end_atomic(iflag);
-	return req->state;
+	return req->rc;
 }
 
-blockdev_req_state_t blockdev_post_and_wait(struct blockdev *dev, struct blockdev_req *req)
+int blockdev_post_and_wait(struct blockdev *dev, struct blockdev_req *req)
 {
 	blockdev_post_request(dev, req);
 	return blockdev_wait_for_completion(req);
 }
 
-void blockdev_notify_complete(struct blockdev_req *req, blockdev_req_state_t completed_state)
+void blockdev_notify_complete(struct blockdev_req *req, int rc)
 {
 	bool iflag = int_begin_atomic();
-	req->state = completed_state;
+	req->state = BLOCKDEV_REQ_FINISHED;
+	req->rc = rc;
 	thread_wakeup(&req->waitqueue);
 	int_end_atomic(iflag);
 }
