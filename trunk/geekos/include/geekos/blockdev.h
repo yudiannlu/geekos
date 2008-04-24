@@ -1,6 +1,5 @@
 /*
  * GeekOS - block devices
- *
  * Copyright (C) 2001-2008, David H. Hovemeyer <david.hovemeyer@gmail.com>
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -29,9 +28,7 @@
 typedef enum { BLOCKDEV_REQ_READ, BLOCKDEV_REQ_WRITE } blockdev_req_type_t;
 
 /* request states */
-typedef enum {
-	BLOCKDEV_REQ_PENDING, BLOCKDEV_REQ_FINISHED, BLOCKDEV_REQ_ERROR
-} blockdev_req_state_t;
+typedef enum { BLOCKDEV_REQ_PENDING, BLOCKDEV_REQ_FINISHED } blockdev_req_state_t;
 
 struct blockdev;
 
@@ -44,6 +41,7 @@ struct blockdev_req {
 	void *buf;                     /* memory buffer */
 	blockdev_req_type_t type;      /* request type */
 	blockdev_req_state_t state;    /* state of request */
+	int rc;                        /* return code (when request completes) */
 	struct thread_queue waitqueue; /* queue in which to wait for completion */
 	struct blockdev *dev;          /* the block device */
 	void *data;                    /* scratch pointer for use by driver */
@@ -70,9 +68,9 @@ struct blockdev {
 /* block device functions */
 struct blockdev_req *blockdev_create_request(lba_t lba, unsigned num_blocks, void *buf, blockdev_req_type_t type);
 void blockdev_post_request(struct blockdev *dev, struct blockdev_req *req);
-blockdev_req_state_t blockdev_wait_for_completion(struct blockdev_req *req);
-blockdev_req_state_t blockdev_post_and_wait(struct blockdev *dev, struct blockdev_req *req);
-void blockdev_notify_complete(struct blockdev_req *req, blockdev_req_state_t completed_state);
+int blockdev_wait_for_completion(struct blockdev_req *req);
+int blockdev_post_and_wait(struct blockdev *dev, struct blockdev_req *req);
+void blockdev_notify_complete(struct blockdev_req *req, int rc);
 
 int blockdev_read_sync(struct blockdev *dev, lba_t lba, unsigned num_blocks, void *buf);
 int blockdev_write_sync(struct blockdev *dev, lba_t lba, unsigned num_blocks, void *buf);
