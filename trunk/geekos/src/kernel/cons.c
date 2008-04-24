@@ -74,10 +74,19 @@ static void cons_ltox(char *buf, long value)
 	*buf = '\0';
 }
 
-void cons_init(void)
+int cons_init(void)
 {
-	s_console = cons_getdefault();
+	int rc;
+
+	rc = cons_getdefault(&s_console);
+	if (rc != 0) {
+		goto done;
+	}
+
 	s_console->ops->clear(s_console);
+
+done:
+	return rc;
 }
 
 void cons_clear(void)
