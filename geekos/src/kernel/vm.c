@@ -19,6 +19,65 @@
 
 #include <geekos/vm.h>
 
+static void vm_release_frame_ref(struct vm_obj *obj, struct frame *frame)
+{
+	KASSERT(MUTEX_IS_HELD(&obj->lock));
+	KASSERT(frame->refcount > 0);
+	KASSERT(frame->content != PAGE_PENDING_INIT);
+
+	frame->refcount--;
+
+	/*
+	 * If the frame's refcount reaches 0, AND its contents
+	 * are not valid due to the failure of the initial pagein,
+	 * then eagerly remove it from the vm_obj.
+	 */
+	if (frame->refcount == 0 && frame->content == PAGE_FAILED_INIT) {
+		frame_list_remove(&obj->pagelist, frame);
+		mem_free(mem_frame_to_pa(frame));
+	}
+}
+
+static int vm_alloc_and_page_in(struct vm_obj *obj, u32_t page_num, struct frame **p_frame)
+{
+	int rc;
+	struct frame *frame;
+
+	KASSERT(MUTEX_IS_HELD(&obj->lock));
+
+	/* allocate a fresh frame */
+	frame = mem_pa_to_frame(mem_alloc_frame());
+	frame->refcount++; /* FIXME: race? */
+
+	/* append frame to pagelist, mark as having pending I/O */
+	frame_list_append(&obj->pagelist, frame);
+	frame->content = PAGE_PENDING_INIT;
+
+	/* unlock the vm_obj mutex while pagein is being done */
+	mutex_unlock(&obj->lock);
+
+	/* page in the data for the frame */
+	rc = vm_pagein(obj->pager, page_num, frame);
+
+	/* re-lock the vm_obj mutex */
+	mutex_lock(&obj->lock);
+
+	/* update frame content based on success/failure of pagein */
+	frame->content = (rc == 0) ? PAGE_CLEAN : PAGE_FAILED_INIT;
+
+	/* other threads may be waiting to learn content state */
+	cond_broadcast(&obj->cond);
+
+	/* if pagein failed, then release reference to frame */
+	if (rc == 0) {
+		*p_frame = frame;
+	} else {
+		vm_release_frame_ref(obj, frame);
+	}
+
+	return rc;
+}
+
 /*
  * Create a vm_obj using the given pager
  * as its underlying data store.
@@ -30,8 +89,7 @@ int vm_create_vm_obj(struct vm_pager *pager, struct vm_obj **p_obj)
 	obj = mem_alloc(sizeof(struct vm_obj));
 
 	mutex_init(&obj->lock);
-	obj->n_readers = 0;
-	obj->n_writers = 0;
+	cond_init(&obj->cond);
 	frame_list_clear(&obj->pagelist);
 	obj->pager = pager;
 
@@ -39,18 +97,33 @@ int vm_create_vm_obj(struct vm_pager *pager, struct vm_obj **p_obj)
 	return 0;
 }
 
-#if 0
+/*
+ * Page in (read) data into given frame.
+ */
+int vm_pagein(struct vm_pager *pager, u32_t page_num, struct frame *frame)
+{
+	return pager->ops->read_page(pager, mem_frame_to_pa(frame), page_num);
+}
+
+/*
+ * Page out (write) data contained in given frame.
+ */
+int vm_pageout(struct vm_pager *pager, u32_t page_num, struct frame *frame)
+{
+	return pager->ops->write_page(pager, mem_frame_to_pa(frame), page_num);
+}
 
 /*
  * Lock a page in a vm_obj.
+ * A page cannot be stolen from its vm_obj
+ * while it is locked.
  *
  * Parameters:
  *   obj - the vm_obj
  *   page_num - which page to lock
- *   access - the type of access
  *   p_frame - where to return the pointer to the frame containing the page data
  */
-int vm_lock_page(struct vm_obj *obj, u32_t page_num, vm_obj_access_t access, struct frame **p_frame)
+int vm_lock_page(struct vm_obj *obj, u32_t page_num, struct frame **p_frame)
 {
 	int rc;
 	struct frame *frame;
@@ -58,30 +131,42 @@ int vm_lock_page(struct vm_obj *obj, u32_t page_num, vm_obj_access_t access, str
 	mutex_lock(&obj->lock);
 
 	/*
-	 * See if page is already available.
+	 * See if page is already present.
 	 */
 	for (frame = frame_list_get_first(&obj->pagelist);
 	     frame != 0;
 	     frame = frame_list_next(frame)) {
 		if (frame->vm_obj_page_num == page_num) {
-			frame->refcount++;
+			frame->refcount++; /* lock the frame! */
 			break;
 		}
 	}
 
 	if (frame == 0) {
 		/*
-		 * Page is not currently present; page it in.
-		 * Future optimization; if entire page will
-		 * be written by caller, avoid pagein.
+		 * Page not present yet; allocate it and
+		 * page in its contents.
 		 */
-		rc = vm_pagein(obj, page_num, p_frame);
-		if (rc != 0) {
-			goto done;
+		rc = vm_alloc_and_page_in(obj, page_num, p_frame);
+	} else {
+		/*
+		 * Page is present; make sure its contents
+		 * have been initialized.
+		 */
+		while (frame->content == PAGE_PENDING_INIT) {
+			cond_wait(&obj->cond, &obj->lock);
+		}
+
+		if (frame->content == PAGE_FAILED_INIT) {
+			/* the initial pagein failed; page contents not valid */
+			rc = frame->errc;
+			vm_release_frame_ref(obj, frame);
+		} else {
+			/* groovy */
+			*p_frame = frame;
 		}
 	}
 
-done:
 	mutex_unlock(&obj->lock);
 
 	return rc;
@@ -92,16 +177,12 @@ done:
  *
  * Parameters:
  *   obj - the vm_obj
- *   access - the type of access
  *   frame - the frame containing the page data
  */
-int vm_unlock_page(struct vm_obj *obj, vm_obj_access_t access, struct frame *frame)
+int vm_unlock_page(struct vm_obj *obj, struct frame *frame)
 {
 	mutex_lock(&obj->lock);
-
-
-
 	mutex_unlock(&obj->lock);
-}
 
-#endif
+	return 0;
+}

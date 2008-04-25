@@ -75,7 +75,7 @@ static void thread_destroy(void *thread_)
 
 	KASSERT(thread->state == THREAD_EXITED || thread->state == THREAD_KILLED);
 
-	cons_printf("destroying thread %p\n", thread);
+	/*cons_printf("destroying thread %p\n", thread);*/
 
 	/* TODO: user space teardown */
 
@@ -96,7 +96,7 @@ static void thread_detach(struct thread *thread)
 	KASSERT(thread->refcount > 0);
 	thread->refcount--;
 	if (thread->refcount == 0) {
-		cons_printf("scheduling thread %p for destruction by work queue\n", thread);
+		/*cons_printf("scheduling thread %p for destruction by work queue\n", thread);*/
 		workqueue_schedule_work(&thread_destroy, thread);
 	}
 }
