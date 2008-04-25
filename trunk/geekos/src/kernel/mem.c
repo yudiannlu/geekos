@@ -1,6 +1,5 @@
 /*
  * GeekOS - memory allocation
- *
  * Copyright (C) 2001-2008, David H. Hovemeyer <david.hovemeyer@gmail.com>
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -29,6 +28,9 @@ IMPLEMENT_LIST_CLEAR(frame_list, frame)
 IMPLEMENT_LIST_APPEND(frame_list, frame)
 IMPLEMENT_LIST_IS_EMPTY(frame_list, frame)
 IMPLEMENT_LIST_REMOVE_FIRST(frame_list, frame)
+IMPLEMENT_LIST_GET_FIRST(frame_list, frame)
+IMPLEMENT_LIST_REMOVE(frame_list, frame)
+IMPLEMENT_LIST_NEXT(frame_list, frame)
 
 static ulong_t s_numframes;
 static struct frame *s_framelist;
@@ -138,8 +140,15 @@ void *mem_alloc_frame(void)
 
 	frame = frame_list_remove_first(&s_freelist);
 	frame->state = FRAME_ALLOCATED;
+	frame->refcount = 0;
 
 	int_end_atomic(iflag);
+
+	/*
+	 * FIXME: how do we ensure that the frame is not stolen
+	 *        before the caller has a chance to do something with it?
+	 *        Need to think about this some more.
+	 */
 
 	return frame ? mem_frame_to_pa(frame) : 0;
 }
@@ -162,7 +171,7 @@ void mem_free(void *p)
 
 	if (((char*)p) >= g_heapstart && ((char*)p) < g_heapend) {
 		/* a buffer in the kernel heap */
-		cons_printf("freeing heap buffer @%p\n", p);
+		/*cons_printf("freeing heap buffer @%p\n", p);*/
 		free(p);
 
 		/* wake up any threads waiting for memory */
@@ -170,8 +179,11 @@ void mem_free(void *p)
 	} else {
 		/* an allocated frame */
 		KASSERT(mem_is_page_aligned((ulong_t) p));
+
 		frame = mem_pa_to_frame(p);
 		KASSERT(frame->state == FRAME_ALLOCATED);
+		KASSERT(frame->refcount == 0);
+
 		frame->state = FRAME_AVAIL;
 		frame_list_append(&s_freelist, frame);
 
