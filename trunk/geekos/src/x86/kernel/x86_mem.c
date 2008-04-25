@@ -82,7 +82,7 @@ void mem_scan_regions(struct multiboot_info *boot_record,
 	/* ISA hole */
 	addr = scan_reg_func(addr, ISA_HOLE_END, FRAME_HW, data);
 	/* initial kernel stack */
-	addr = scan_reg_func(addr, ISA_HOLE_END+PAGE_SIZE, FRAME_ALLOCATED, data);
+	addr = scan_reg_func(addr, ISA_HOLE_END+PAGE_SIZE, FRAME_KSTACK, data);
 	/* kernel code/data and framelist structure */
 	addr = scan_reg_func(addr, layout.kernel_end + layout.framelist_numframes, FRAME_KERN, data);
 	/* available high memory */

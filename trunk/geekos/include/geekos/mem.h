@@ -33,12 +33,25 @@ typedef enum {
 	FRAME_AVAIL,     /* frame is on the freelist */
 	FRAME_KERN,      /* frame used by kernel code or data */
 	FRAME_HW,        /* frame used by hardware (e.g., ISA hole) */
-	FRAME_ALLOCATED, /* frame is allocated */
 	FRAME_UNUSED,    /* frame is unused */
 	FRAME_HEAP,      /* frame is in kernel heap */
+	FRAME_KSTACK,    /* frame allocated as a thread's kernel stack */
+	FRAME_VM_OBJ,    /* frame is allocated to a vm_obj */
 } frame_state_t;
 
 DECLARE_LIST(frame_list, frame);
+
+/*
+ * States describing the data stored in a frame.
+ * These states are only applicable when the frame
+ * is being used as part of a vm_obj.
+ */
+typedef enum {
+	PAGE_PENDING_INIT=0,  /* contents not yet initialized */
+	PAGE_FAILED_INIT,     /* contents could not be initialized; page is bad */
+	PAGE_CLEAN,           /* contents up to date WRT underlying data store */
+	PAGE_DIRTY,           /* contents modified WRT underlying data store */
+} page_content_t;
 
 /*
  * Frame metadata structure
@@ -47,15 +60,20 @@ struct frame {
 	frame_state_t state;
 	DEFINE_LINK(frame_list, frame);
 
-	/* if the frame is part of a vm_obj, its page number in that vm_obj */
-	u32_t vm_obj_page_num;
+	u32_t vm_obj_page_num;    /* page number in vm_obj */
+	int refcount;             /* number of threads which have locked the frame */
+	page_content_t content;   /* status of frame contents (data) */
+	int errc;                 /* error code if content == PAGE_FAILED_INIT */
 };
 
 void mem_clear_bss(void);
 void mem_init(struct multiboot_info *boot_record);
 void *mem_alloc(size_t size);
-void *mem_alloc_frame(void);
 void mem_free(void *p);
+
+//void *mem_alloc_frame(void);
+struct frame *mem_alloc_frame(frame_state_t initial_state, int initial_refcount);
+void mem_free_frame(struct frame *frame);
 
 void *mem_frame_to_pa(struct frame *frm);
 struct frame *mem_pa_to_frame(void *pa);
