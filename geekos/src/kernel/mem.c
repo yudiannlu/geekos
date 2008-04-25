@@ -124,10 +124,36 @@ void *mem_alloc(size_t size)
 }
 
 /*
+ * Free memory allocated with mem_alloc()
+ */
+void mem_free(void *p)
+{
+	extern void free(void *);
+	extern char *g_heapstart, *g_heapend;
+	bool iflag;
+
+	if (!p) {
+		return;
+	}
+
+	KASSERT(((char *) p) >= g_heapstart && ((char *) p) < g_heapend);
+
+	iflag = int_begin_atomic();
+
+	/* free the memory */
+	free(p);
+
+	/* wake up any threads waiting for memory */
+	thread_wakeup(&s_heap_waitqueue);
+
+	int_end_atomic(iflag);
+}
+
+/*
  * Allocate a physical memory frame.
  * Suspends calling thread until a frame is available.
  */
-void *mem_alloc_frame(void)
+struct frame *mem_alloc_frame(frame_state_t initial_state, int initial_refcount)
 {
 	struct frame *frame;
 	bool iflag;
@@ -139,57 +165,30 @@ void *mem_alloc_frame(void)
 	}
 
 	frame = frame_list_remove_first(&s_freelist);
-	frame->state = FRAME_ALLOCATED;
-	frame->refcount = 0;
+	frame->state = initial_state;
+	frame->refcount = initial_refcount;
 
 	int_end_atomic(iflag);
 
-	/*
-	 * FIXME: how do we ensure that the frame is not stolen
-	 *        before the caller has a chance to do something with it?
-	 *        Need to think about this some more.
-	 */
-
-	return frame ? mem_frame_to_pa(frame) : 0;
+	return frame;
 }
 
 /*
- * Free memory allocated with mem_alloc() or mem_alloc_frame().
+ * Free a physical memory frame allocated with mem_alloc_frame().
  */
-void mem_free(void *p)
+void mem_free_frame(struct frame *frame)
 {
-	extern void free(void *);
-	extern char *g_heapstart, *g_heapend;
-	struct frame *frame;
 	bool iflag;
 
-	if (!p) {
-		return;
-	}
+	KASSERT(frame->refcount == 0);
 
 	iflag = int_begin_atomic();
 
-	if (((char*)p) >= g_heapstart && ((char*)p) < g_heapend) {
-		/* a buffer in the kernel heap */
-		/*cons_printf("freeing heap buffer @%p\n", p);*/
-		free(p);
+	frame->state = FRAME_AVAIL;
+	frame_list_append(&s_freelist, frame);
 
-		/* wake up any threads waiting for memory */
-		thread_wakeup(&s_heap_waitqueue);
-	} else {
-		/* an allocated frame */
-		KASSERT(mem_is_page_aligned((ulong_t) p));
-
-		frame = mem_pa_to_frame(p);
-		KASSERT(frame->state == FRAME_ALLOCATED);
-		KASSERT(frame->refcount == 0);
-
-		frame->state = FRAME_AVAIL;
-		frame_list_append(&s_freelist, frame);
-
-		/* wake up any threads waiting for a frame */
-		thread_wakeup(&s_frame_waitqueue);
-	}
+	/* wake up any threads waiting for a frame */
+	thread_wakeup(&s_frame_waitqueue);
 
 	int_end_atomic(iflag);
 }

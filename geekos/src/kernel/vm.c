@@ -34,7 +34,7 @@ static void vm_release_frame_ref(struct vm_obj *obj, struct frame *frame)
 	 */
 	if (frame->refcount == 0 && frame->content == PAGE_FAILED_INIT) {
 		frame_list_remove(&obj->pagelist, frame);
-		mem_free(mem_frame_to_pa(frame));
+		mem_free_frame(frame);
 	}
 }
 
@@ -46,8 +46,7 @@ static int vm_alloc_and_page_in(struct vm_obj *obj, u32_t page_num, struct frame
 	KASSERT(MUTEX_IS_HELD(&obj->lock));
 
 	/* allocate a fresh frame */
-	frame = mem_pa_to_frame(mem_alloc_frame());
-	frame->refcount++; /* FIXME: race? */
+	frame = mem_alloc_frame(FRAME_VM_OBJ, 1);
 
 	/* append frame to pagelist, mark as having pending I/O */
 	frame_list_append(&obj->pagelist, frame);

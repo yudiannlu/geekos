@@ -79,7 +79,7 @@ static void thread_destroy(void *thread_)
 
 	/* TODO: user space teardown */
 
-	mem_free(thread->stack);
+	mem_free_frame(mem_pa_to_frame(thread->stack));
 	mem_free(thread);
 }
 
@@ -142,8 +142,11 @@ void thread_init(void)
  */
 struct thread *thread_create(thread_func_t *start_func, ulong_t arg, thread_mode_t mode)
 {
-	struct thread *thread = mem_alloc(sizeof(struct thread));
-	void *stack = mem_alloc_frame();
+	struct thread *thread;
+	void *stack;
+
+	thread = mem_alloc(sizeof(struct thread));
+	stack = mem_frame_to_pa(mem_alloc_frame(FRAME_KSTACK, 0));
 
 	/* initialize the thread */
 	memset(thread, '\0', sizeof(struct thread));
