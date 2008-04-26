@@ -80,10 +80,12 @@ struct fs_instance {
  * Operations to be defined by inodes.
  */
 struct inode_ops {
-#if 0
-	int (*read)(struct inode *inode, void *buf, size_t len);  /* files only */
-	int (*write)(struct inode *inode, void *buf, size_t len); /* files only */
-#endif
+	/*
+	 * File data is read and written in page-sized chunks.
+	 */
+	int (*read_page)(struct inode *inode, void *buf, u32_t page_num);
+	int (*write_page)(struct inode *inode, void *buf, u32_t page_num);
+
 	int (*close)(struct inode *inode);
 	int (*lookup)(struct inode *inode, const char *name, struct inode **p_inode); /* dirs only */
 };
