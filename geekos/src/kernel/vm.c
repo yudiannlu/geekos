@@ -52,7 +52,10 @@ static int vm_alloc_and_page_in(struct vm_obj *obj, u32_t page_num, struct frame
 	frame_list_append(&obj->pagelist, frame);
 	frame->content = PAGE_PENDING_INIT;
 
-	/* unlock the vm_obj mutex while pagein is being done */
+	/* unlock the vm_obj mutex while pagein is being done.
+	 * because we set the content to PAGE_PENDING_INIT,
+	 * other threads looking for this page will know
+	 * its contents aren't initialized yet */
 	mutex_unlock(&obj->lock);
 
 	/* page in the data for the frame */
@@ -67,10 +70,11 @@ static int vm_alloc_and_page_in(struct vm_obj *obj, u32_t page_num, struct frame
 	/* other threads may be waiting to learn content state */
 	cond_broadcast(&obj->cond);
 
-	/* if pagein failed, then release reference to frame */
 	if (rc == 0) {
+		/* success! */
 		*p_frame = frame;
 	} else {
+		/* pagein failed: release reference to frame */
 		vm_release_frame_ref(obj, frame);
 	}
 
@@ -180,8 +184,14 @@ int vm_lock_page(struct vm_obj *obj, u32_t page_num, struct frame **p_frame)
  */
 int vm_unlock_page(struct vm_obj *obj, struct frame *frame)
 {
+	int rc;
+
 	mutex_lock(&obj->lock);
+
+	KASSERT(frame->refcount > 0);
+	frame->refcount--;
+
 	mutex_unlock(&obj->lock);
 
-	return 0;
+	return rc;
 }
