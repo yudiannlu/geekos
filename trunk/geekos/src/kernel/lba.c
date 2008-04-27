@@ -18,7 +18,19 @@
  */
 
 #include <geekos/range.h>
+#include <geekos/blockdev.h>
 #include <geekos/lba.h>
+
+blocksize_t blocksize_from_size(unsigned size)
+{
+	blocksize_t blocksize = { .size = size };
+	return blocksize;
+}
+
+unsigned blocksize_size(blocksize_t blocksize)
+{
+	return blocksize.size;
+}
 
 /*
  * Create an LBA from a number.
@@ -27,6 +39,14 @@ lba_t lba_from_num(u32_t num)
 {
 	lba_t lba = { .val = num };
 	return lba;
+}
+
+/*
+ * Get block number from LBA.
+ */
+u32_t lba_num(lba_t lba)
+{
+	return lba.val;
 }
 
 /*
@@ -43,16 +63,40 @@ bool lba_is_range_valid(lba_t start, u32_t num_blocks, u32_t total_blocks)
  * Get the offset in bytes of a block from the start of the
  * block device.
  */
-size_t lba_block_offset_in_bytes(lba_t lba, unsigned block_size)
+size_t lba_block_offset_in_bytes(lba_t lba, blocksize_t block_size)
 {
-	return ((size_t) lba.val) * block_size;
+	return ((size_t) lba.val) * block_size.size;
 }
 
 /*
  * Get total size of a range of blocks in bytes.
  */
-size_t lba_range_size_in_bytes(u32_t num_blocks, unsigned block_size)
+size_t lba_range_size_in_bytes(u32_t num_blocks, blocksize_t block_size)
 {
-	return ((size_t) num_blocks) * block_size;
+	return ((size_t) num_blocks) * block_size.size;
+}
+
+/*
+ * Get the total number of blocks spanned by a table
+ * consisting of some number of entries of a specified size.
+ *
+ * Parameters:
+ *   block_size - block size in bytes
+ *   num_entries - number of entries in the table
+ *   entry_size - size of a single table entry
+ */
+size_t lba_get_num_blocks_in_table(blocksize_t block_size, u32_t num_entries, unsigned entry_size)
+{
+	size_t table_size_in_bytes;
+	size_t table_size_in_blocks;
+
+	table_size_in_bytes = num_entries * entry_size;
+	table_size_in_blocks = table_size_in_bytes / block_size.size;
+
+	if (table_size_in_bytes % block_size.size != 0) {
+		table_size_in_blocks++;
+	}
+
+	return table_size_in_blocks;
 }
 

@@ -53,7 +53,7 @@ struct blockdev_req {
 struct blockdev_ops {
 	void (*post_request)(struct blockdev *dev, struct blockdev_req *req);
 	ulong_t (*get_num_blocks)(struct blockdev *dev);
-	unsigned (*get_block_size)(struct blockdev *dev);
+	blocksize_t (*get_block_size)(struct blockdev *dev);
 	int (*close)(struct blockdev *dev);
 };
 
@@ -75,7 +75,8 @@ void blockdev_notify_complete(struct blockdev_req *req, int rc);
 int blockdev_read_sync(struct blockdev *dev, lba_t lba, unsigned num_blocks, void *buf);
 int blockdev_write_sync(struct blockdev *dev, lba_t lba, unsigned num_blocks, void *buf);
 
-unsigned blockdev_get_block_size(struct blockdev *dev);
+blocksize_t blockdev_get_block_size(struct blockdev *dev);
+ulong_t blockdev_get_num_blocks(struct blockdev *dev);
 int blockdev_close(struct blockdev *dev);
 
 #endif /* ifndef GEEKOS_BLOCKDEV_H */

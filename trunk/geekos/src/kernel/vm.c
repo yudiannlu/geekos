@@ -19,7 +19,7 @@
 
 #include <geekos/vm.h>
 
-static void vm_release_frame_ref(struct vm_obj *obj, struct frame *frame)
+static void vm_release_frame_ref(struct vm_pagecache *obj, struct frame *frame)
 {
 	KASSERT(MUTEX_IS_HELD(&obj->lock));
 	KASSERT(frame->refcount > 0);
@@ -30,7 +30,7 @@ static void vm_release_frame_ref(struct vm_obj *obj, struct frame *frame)
 	/*
 	 * If the frame's refcount reaches 0, AND its contents
 	 * are not valid due to the failure of the initial pagein,
-	 * then eagerly remove it from the vm_obj.
+	 * then eagerly remove it from the vm_pagecache.
 	 */
 	if (frame->refcount == 0 && frame->content == PAGE_FAILED_INIT) {
 		frame_list_remove(&obj->pagelist, frame);
@@ -38,7 +38,7 @@ static void vm_release_frame_ref(struct vm_obj *obj, struct frame *frame)
 	}
 }
 
-static int vm_alloc_and_page_in(struct vm_obj *obj, u32_t page_num, struct frame **p_frame)
+static int vm_alloc_and_page_in(struct vm_pagecache *obj, u32_t page_num, struct frame **p_frame)
 {
 	int rc;
 	struct frame *frame;
@@ -46,13 +46,13 @@ static int vm_alloc_and_page_in(struct vm_obj *obj, u32_t page_num, struct frame
 	KASSERT(MUTEX_IS_HELD(&obj->lock));
 
 	/* allocate a fresh frame */
-	frame = mem_alloc_frame(FRAME_VM_OBJ, 1);
+	frame = mem_alloc_frame(FRAME_VM_PGCACHE, 1);
 
 	/* append frame to pagelist, mark as having pending I/O */
 	frame_list_append(&obj->pagelist, frame);
 	frame->content = PAGE_PENDING_INIT;
 
-	/* unlock the vm_obj mutex while pagein is being done.
+	/* unlock the vm_pagecache mutex while pagein is being done.
 	 * because we set the content to PAGE_PENDING_INIT,
 	 * other threads looking for this page will know
 	 * its contents aren't initialized yet */
@@ -61,7 +61,7 @@ static int vm_alloc_and_page_in(struct vm_obj *obj, u32_t page_num, struct frame
 	/* page in the data for the frame */
 	rc = vm_pagein(obj->pager, page_num, frame);
 
-	/* re-lock the vm_obj mutex */
+	/* re-lock the vm_pagecache mutex */
 	mutex_lock(&obj->lock);
 
 	/* update frame content based on success/failure of pagein */
@@ -82,14 +82,14 @@ static int vm_alloc_and_page_in(struct vm_obj *obj, u32_t page_num, struct frame
 }
 
 /*
- * Create a vm_obj using the given pager
+ * Create a vm_pagecache using the given pager
  * as its underlying data store.
  */
-int vm_create_vm_obj(struct vm_pager *pager, struct vm_obj **p_obj)
+int vm_create_vm_pagecache(struct vm_pager *pager, struct vm_pagecache **p_obj)
 {
-	struct vm_obj *obj;
+	struct vm_pagecache *obj;
 
-	obj = mem_alloc(sizeof(struct vm_obj));
+	obj = mem_alloc(sizeof(struct vm_pagecache));
 
 	mutex_init(&obj->lock);
 	cond_init(&obj->cond);
@@ -117,16 +117,16 @@ int vm_pageout(struct vm_pager *pager, u32_t page_num, struct frame *frame)
 }
 
 /*
- * Lock a page in a vm_obj.
- * A page cannot be stolen from its vm_obj
+ * Lock a page in a vm_pagecache.
+ * A page cannot be stolen from its vm_pagecache
  * while it is locked.
  *
  * Parameters:
- *   obj - the vm_obj
+ *   obj - the vm_pagecache
  *   page_num - which page to lock
  *   p_frame - where to return the pointer to the frame containing the page data
  */
-int vm_lock_page(struct vm_obj *obj, u32_t page_num, struct frame **p_frame)
+int vm_lock_page(struct vm_pagecache *obj, u32_t page_num, struct frame **p_frame)
 {
 	int rc;
 	struct frame *frame;
@@ -139,7 +139,7 @@ int vm_lock_page(struct vm_obj *obj, u32_t page_num, struct frame **p_frame)
 	for (frame = frame_list_get_first(&obj->pagelist);
 	     frame != 0;
 	     frame = frame_list_next(frame)) {
-		if (frame->vm_obj_page_num == page_num) {
+		if (frame->vm_pgcache_page_num == page_num) {
 			frame->refcount++; /* lock the frame! */
 			break;
 		}
@@ -176,13 +176,13 @@ int vm_lock_page(struct vm_obj *obj, u32_t page_num, struct frame **p_frame)
 }
 
 /*
- * Unlock a page in a vm_obj.
+ * Unlock a page in a vm_pagecache.
  *
  * Parameters:
- *   obj - the vm_obj
+ *   obj - the vm_pagecache
  *   frame - the frame containing the page data
  */
-int vm_unlock_page(struct vm_obj *obj, struct frame *frame)
+int vm_unlock_page(struct vm_pagecache *obj, struct frame *frame)
 {
 	int rc;
 
@@ -195,3 +195,4 @@ int vm_unlock_page(struct vm_obj *obj, struct frame *frame)
 
 	return rc;
 }
+

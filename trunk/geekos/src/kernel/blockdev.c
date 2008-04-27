@@ -100,7 +100,7 @@ int blockdev_write_sync(struct blockdev *dev, lba_t lba, unsigned num_blocks, vo
 	return blockdev_issue_sync(dev, lba, num_blocks, buf, BLOCKDEV_REQ_WRITE);
 }
 
-unsigned blockdev_get_block_size(struct blockdev *dev)
+blocksize_t blockdev_get_block_size(struct blockdev *dev)
 {
 	return dev->ops->get_block_size(dev);
 }

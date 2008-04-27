@@ -22,14 +22,26 @@
 
 #include <stddef.h>
 #include <geekos/types.h>
+#include <geekos/blockdev.h>
+
+/* block size data type */
+typedef struct { unsigned size; } blocksize_t;
+#define INIT_BLOCKSIZE(sz) { .size = (sz) }
 
 /* logical block address type */
-/*typedef u32_t lba_t;*/
 typedef struct { u32_t val; } lba_t;
 
+/* blocksize_t functions */
+blocksize_t blocksize_from_size(unsigned size);
+unsigned blocksize_size(blocksize_t blocksize);
+
+/* lba_t functions */
 lba_t lba_from_num(u32_t num);
+u32_t lba_num(lba_t lba);
 bool lba_is_range_valid(lba_t start, u32_t num_blocks, u32_t total_blocks);
-size_t lba_block_offset_in_bytes(lba_t lba, unsigned block_size);
-size_t lba_range_size_in_bytes(u32_t num_blocks, unsigned block_size);
+size_t lba_block_offset_in_bytes(lba_t lba, blocksize_t block_size);
+size_t lba_range_size_in_bytes(u32_t num_blocks, blocksize_t block_size);
+size_t lba_get_num_blocks_in_table(blocksize_t block_size, u32_t num_entries, unsigned entry_size);
 
 #endif /* GEEKOS_LBA_H */
+

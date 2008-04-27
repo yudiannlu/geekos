@@ -46,12 +46,12 @@ struct vm_pager_ops {
 };
 
 /*
- * A vm_obj is a data store that can be mapped into
+ * A vm_pagecache is a data store that can be mapped into
  * a process address space.
  * It is a cache of pages containing data from
  * an underlying data store (the pager).
  */
-struct vm_obj {
+struct vm_pagecache {
 	struct mutex lock;
 	struct condition cond;
 	struct frame_list pagelist; /* list of pages containing data from underlying data store */
@@ -61,12 +61,13 @@ struct vm_obj {
 /*
  * Functions
  */
-int vm_create_vm_obj(struct vm_pager *pager, struct vm_obj **p_obj);
+int vm_create_vm_pagecache(struct vm_pager *pager, struct vm_pagecache **p_obj);
 
 int vm_pagein(struct vm_pager *pager, u32_t page_num, struct frame *frame);
 int vm_pageout(struct vm_pager *pager, u32_t page_num, struct frame *frame);
 
-int vm_lock_page(struct vm_obj *obj, u32_t page_num, struct frame **p_frame);
-int vm_unlock_page(struct vm_obj *obj, struct frame *frame);
+int vm_lock_page(struct vm_pagecache *obj, u32_t page_num, struct frame **p_frame);
+int vm_unlock_page(struct vm_pagecache *obj, struct frame *frame);
 
 #endif /* GEEKOS_VM_H */
+
