@@ -31,8 +31,8 @@
  * - dev->data points to the ramdisk_data object for the device
  */
 
-#define RAMDISK_BLOCK_SIZE 512
-#define RAMDISK_NUM_BLOCKS(dev) ((dev)->size / RAMDISK_BLOCK_SIZE)
+const blocksize_t RAMDISK_BLOCK_SIZE = INIT_BLOCKSIZE(512);
+#define RAMDISK_NUM_BLOCKS(dev) ((dev)->size / blocksize_size(RAMDISK_BLOCK_SIZE))
 
 struct ramdisk_data {
 	char *buf;
@@ -90,9 +90,14 @@ ulong_t ramdisk_get_num_blocks(struct blockdev *dev)
 	return RAMDISK_NUM_BLOCKS((struct ramdisk_data *) dev->data);
 }
 
-unsigned ramdisk_get_block_size(struct blockdev *dev)
+blocksize_t ramdisk_get_block_size(struct blockdev *dev)
 {
 	return RAMDISK_BLOCK_SIZE;
+}
+
+ulong_t blockdev_get_num_blocks(struct blockdev *dev)
+{
+	return dev->ops->get_num_blocks(dev);
 }
 
 static struct blockdev_ops s_ramdisk_blockdev_ops = {

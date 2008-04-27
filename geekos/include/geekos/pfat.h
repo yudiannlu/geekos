@@ -42,6 +42,7 @@ struct pfat_superblock {
 	u32_t magic;               /* must contain PFAT_MAGIC */
 	u32_t fat_lba;             /* lba of FAT (located after superblock) */
 	u32_t fat_num_entries;     /* number of entries in FAT */
+	u32_t first_cluster_lba;   /* lba of first cluster (storing file/dir data) */
 	u32_t cluster_size;        /* bytes per cluster */
 	u32_t root_dir_fat_index;  /* index of root directory's FAT index */
 

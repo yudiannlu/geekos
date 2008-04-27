@@ -36,7 +36,7 @@ typedef enum {
 	FRAME_UNUSED,    /* frame is unused */
 	FRAME_HEAP,      /* frame is in kernel heap */
 	FRAME_KSTACK,    /* frame allocated as a thread's kernel stack */
-	FRAME_VM_OBJ,    /* frame is allocated to a vm_obj */
+	FRAME_VM_PGCACHE,/* frame is allocated to a vm_pagecache */
 } frame_state_t;
 
 DECLARE_LIST(frame_list, frame);
@@ -44,7 +44,7 @@ DECLARE_LIST(frame_list, frame);
 /*
  * States describing the data stored in a frame.
  * These states are only applicable when the frame
- * is being used as part of a vm_obj.
+ * is being used as part of a vm_pagecache.
  */
 typedef enum {
 	PAGE_PENDING_INIT=0,  /* contents not yet initialized */
@@ -60,7 +60,7 @@ struct frame {
 	frame_state_t state;
 	DEFINE_LINK(frame_list, frame);
 
-	u32_t vm_obj_page_num;    /* page number in vm_obj */
+	u32_t vm_pgcache_page_num;    /* page number in vm_pagecache */
 	int refcount;             /* number of threads which have locked the frame */
 	page_content_t content;   /* status of frame contents (data) */
 	int errc;                 /* error code if content == PAGE_FAILED_INIT */
