@@ -47,8 +47,8 @@ DECLARE_LIST(fs_instance_list, fs_instance);
  */
 struct fs_driver_ops {
 	const char *(*get_name)(struct fs_driver *fs);
-	int (*mount)(
-		struct fs_driver *fs, struct inode *mountpoint,
+	int (*create_instance)(
+		struct fs_driver *fs,
 		const char *init, const char *opts, struct fs_instance **p_instance);
 };
 
