@@ -37,7 +37,7 @@
 
 #define PFAT_FORMAT_ERROR    EINVAL /* FIXME: better error code? */
 
-/* ------------------- data types ------------------- */
+/* ------------------- private data ------------------- */
 
 /*
  * Data structure representing a mounted PFAT filesystem instance.
@@ -54,18 +54,20 @@ struct pfat_instance {
  * PFAT inode data.
  */
 struct pfat_inode {
+	u32_t fat_index;  /* first FAT entry */
 };
 
 /*
  * fs_driver_ops functions.
  */
 static const char *pfat_get_name(struct fs_driver *driver);
-static int pfat_create_instance(
-	struct fs_driver *fs, const char *init, const char *opts, struct fs_instance **p_instance);
+static int pfat_mount(
+	struct fs_driver *fs, struct inode *mountpoint,
+	const char *init, const char *opts, struct fs_instance **p_instance);
 
 static struct fs_driver_ops s_pfat_driver_ops = {
 	.get_name = &pfat_get_name,
-	.create_instance = &pfat_create_instance,
+	.mount = &pfat_mount,
 };
 
 static struct fs_driver s_pfat_driver = {
@@ -77,15 +79,30 @@ static struct fs_driver s_pfat_driver = {
  */
 static int pfat_get_root(struct fs_instance *instance, struct inode **p_dir);
 static int pfat_open(struct fs_instance *instance, const char *path, int mode, struct inode **p_inode);
-static int pfat_close(struct fs_instance *instance);
+static int pfat_close_instance(struct fs_instance *instance);
 
 static struct fs_instance_ops s_pfat_instance_ops = {
 	.get_root = &pfat_get_root,
 	.open = &pfat_open,
-	.close = &pfat_close,
+	.close_instance = &pfat_close_instance,
 };
 
-/* ------------------- private implementation ------------------- */
+/*
+ * inode_ops functions
+ */
+static int pfat_read_page(struct inode *inode, void *buf, u32_t page_num);
+static int pfat_write_page(struct inode *inode, void *buf, u32_t page_num);
+static int pfat_close(struct inode *inode);
+static int pfat_lookup(struct inode *inode, const char *name, struct inode **p_inode);
+
+static struct inode_ops s_pfat_inode_ops = {
+	.read_page = &pfat_read_page,
+	.write_page = &pfat_write_page,
+	.close = &pfat_close,
+	.lookup = &pfat_lookup,
+};
+
+/* ------------------- private functions ------------------- */
 
 static int pfat_read_super(struct blockdev *dev, struct pfat_superblock **p_super)
 {
@@ -150,9 +167,34 @@ fail:
 	return PFAT_FORMAT_ERROR;
 }
 
-static int pfat_get_inode(u32_t fat_index, vfs_inode_type_t inode_type, struct inode **p_inode)
+static int pfat_get_inode(
+	struct fs_instance *fs_inst, u32_t fat_index, struct inode *parent,
+	vfs_inode_type_t type, char *name, struct inode **p_inode)
 {
-	return -1;
+	int rc;
+	struct pfat_inode *pfat_inode;
+	struct inode *inode;
+
+	/* create PFAT-specific inode data */
+	pfat_inode = mem_alloc(sizeof(struct pfat_inode));
+	pfat_inode->fat_index = fat_index;
+
+	/* create the actual inode */
+	rc = vfs_inode_create(&s_pfat_inode_ops, fs_inst, parent, type, name, pfat_inode, &inode);
+	if (rc != 0) {
+		goto done;
+	}
+
+	/* success! add the initial reference */
+	inode->refcount++;
+	KASSERT(inode->refcount == 1);
+	*p_inode = inode;
+
+done:
+	if (rc != 0) {
+		mem_free(pfat_inode);
+	}
+	return rc;
 }
 
 /* ------------------- fs_driver operations ------------------- */
@@ -162,8 +204,9 @@ static const char *pfat_get_name(struct fs_driver *driver)
 	return "pfat";
 }
 
-static int pfat_create_instance(
-	struct fs_driver *fs, const char *init, const char *opts, struct fs_instance **p_instance)
+static int pfat_mount(
+	struct fs_driver *fs, struct inode *mountpoint,
+	const char *init, const char *opts, struct fs_instance **p_instance)
 {
 	int rc;
 	struct fs_instance *fs_inst;
@@ -226,7 +269,7 @@ static int pfat_get_root(struct fs_instance *instance, struct inode **p_dir)
 		 * Root directory inode object hasn't been created yet;
 		 * instantiate it.
 		 */
-		rc = pfat_get_inode(inst_data->super->root_dir_fat_index, VFS_DIR, p_dir);
+		rc = pfat_get_inode(instance, inst_data->super->root_dir_fat_index, 0, VFS_DIR, 0, p_dir);
 	} else {
 		/*
 		 * Add a reference to the already-instantiated
@@ -249,7 +292,33 @@ static int pfat_open(struct fs_instance *instance, const char *path, int mode, s
 	return ENOTSUP;
 }
 
-static int pfat_close(struct fs_instance *instance)
+static int pfat_close_instance(struct fs_instance *instance)
+{
+	KASSERT(false);
+	return ENOTSUP;
+}
+
+/* ------------------- inode_ops functions ------------------- */
+
+static int pfat_read_page(struct inode *inode, void *buf, u32_t page_num)
+{
+	KASSERT(false);
+	return ENOTSUP;
+}
+
+static int pfat_write_page(struct inode *inode, void *buf, u32_t page_num)
+{
+	KASSERT(false);
+	return ENOTSUP;
+}
+
+static int pfat_close(struct inode *inode)
+{
+	KASSERT(false);
+	return ENOTSUP;
+}
+
+static int pfat_lookup(struct inode *inode, const char *name, struct inode **p_inode)
 {
 	KASSERT(false);
 	return ENOTSUP;
@@ -261,6 +330,3 @@ int pfat_init(void)
 {
 	return vfs_register_fs_driver(&s_pfat_driver);
 }
-
-
-

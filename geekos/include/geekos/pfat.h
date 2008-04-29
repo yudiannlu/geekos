@@ -44,7 +44,7 @@ struct pfat_superblock {
 	u32_t fat_num_entries;     /* number of entries in FAT */
 	u32_t first_cluster_lba;   /* lba of first cluster (storing file/dir data) */
 	u32_t cluster_size;        /* bytes per cluster */
-	u32_t root_dir_fat_index;  /* index of root directory's FAT index */
+	u32_t root_dir_fat_index;  /* index of root directory's first FAT entry */
 
 	/* other metainfo could go here... */
 	char reserved[512 - 24];
@@ -67,7 +67,7 @@ struct pfat_entry {
  * PFAT directory entry.
  */
 struct pfat_dir_entry {
-	u32_t fat_index;                  /* index of FAT entry */
+	u32_t fat_index;                  /* index of first FAT entry */
 	u16_t bits;                       /* attributes */
 	u16_t perms;                      /* file permissions */
 	u16_t uid;                        /* uid of owner */

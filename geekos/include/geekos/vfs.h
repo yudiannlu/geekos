@@ -40,14 +40,16 @@ struct inode;
 struct pagecache;
 
 DECLARE_LIST(inode_list, inode);
+DECLARE_LIST(fs_instance_list, fs_instance);
 
 /*
  * Operations to be defined by filesystem drivers.
  */
 struct fs_driver_ops {
 	const char *(*get_name)(struct fs_driver *fs);
-	int (*create_instance)(
-		struct fs_driver *fs, const char *init, const char *opts, struct fs_instance **p_instance);
+	int (*mount)(
+		struct fs_driver *fs, struct inode *mountpoint,
+		const char *init, const char *opts, struct fs_instance **p_instance);
 };
 
 /*
@@ -64,7 +66,7 @@ struct fs_driver {
 struct fs_instance_ops {
 	int (*get_root)(struct fs_instance *instance, struct inode **p_dir);
 	int (*open)(struct fs_instance *instance, const char *path, int mode, struct inode **p_inode);
-	int (*close)(struct fs_instance *instance);
+	int (*close_instance)(struct fs_instance *instance);
 };
 
 /*
@@ -72,7 +74,7 @@ struct fs_instance_ops {
  */
 struct fs_instance {
 	struct fs_instance_ops *ops;  /* operations */
-	int refcount;                 /* reference count */
+	DEFINE_LINK(fs_instance_list, fs_instance);
 	void *p;                      /* for use by filesystem driver */
 };
 
@@ -99,9 +101,11 @@ typedef enum { VFS_FILE, VFS_DIR } vfs_inode_type_t;
  */
 struct inode {
 	struct inode_ops *ops;        /* operations */
+	struct fs_instance *fs_inst;  /* filesystem instance inode belongs to */
 	struct inode *parent;         /* parent directory */
 	vfs_inode_type_t type;        /* type: file or directory */
 	char *name;                   /* filename string */
+	struct inode *mount;          /* if another fs_instance is mounted here, ptr to its root directory */
 	struct inode_list child_list; /* list of child files and directories */
 	DEFINE_LINK(inode_list, inode);/* link fields for inode_list */
 	int refcount;                 /* reference count */
@@ -110,8 +114,8 @@ struct inode {
 	void *p;                      /* for use by filesystem driver */
 };
 
-int vfs_register_fs_driver(struct fs_driver *fs);
-int vfs_mount_root(struct fs_instance *instance);
+int vfs_mount_root(const char *fs_driver_name, const char *init, const char *opts);
+int vfs_mount(const char *path, const char *fs_driver_name, const char *init, const char *opts);
 
 int vfs_get_root_dir(struct inode **p_dir);
 int vfs_lookup_inode(struct inode *start_dir, const char *path, struct inode **p_inode);
@@ -121,7 +125,17 @@ int vfs_read(struct inode *inode, void *buf, size_t len);
 int vfs_write(struct inode *inode, void *buf, size_t len);
 int vfs_close(struct inode *inode);
 
+/*
+ * The following functions are called by
+ * the fs drivers.
+ */
+int vfs_register_fs_driver(struct fs_driver *fs);
 int vfs_fs_instance_create(struct fs_instance_ops *ops, void *p, struct fs_instance **p_fs_inst);
+int vfs_inode_create(
+	struct inode_ops *ops, struct fs_instance *fs_inst, struct inode *parent,
+	vfs_inode_type_t type, char *name,
+	void *p,
+	struct inode **p_inode);
 
 #endif /* ifndef ASM */
 
