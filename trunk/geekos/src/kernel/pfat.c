@@ -61,13 +61,13 @@ struct pfat_inode {
  * fs_driver_ops functions.
  */
 static const char *pfat_get_name(struct fs_driver *driver);
-static int pfat_mount(
-	struct fs_driver *fs, struct inode *mountpoint,
+static int pfat_create_instance(
+	struct fs_driver *fs,
 	const char *init, const char *opts, struct fs_instance **p_instance);
 
 static struct fs_driver_ops s_pfat_driver_ops = {
 	.get_name = &pfat_get_name,
-	.mount = &pfat_mount,
+	.create_instance = &pfat_create_instance,
 };
 
 static struct fs_driver s_pfat_driver = {
@@ -204,8 +204,8 @@ static const char *pfat_get_name(struct fs_driver *driver)
 	return "pfat";
 }
 
-static int pfat_mount(
-	struct fs_driver *fs, struct inode *mountpoint,
+static int pfat_create_instance(
+	struct fs_driver *fs,
 	const char *init, const char *opts, struct fs_instance **p_instance)
 {
 	int rc;

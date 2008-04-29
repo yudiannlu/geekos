@@ -142,8 +142,8 @@ int vfs_do_mount(const char *fs_driver_name,
 		goto done;
 	}
 
-	/* mount the filesystem */
-	rc = fs_driver->ops->mount(fs_driver, mountpoint, init, opts, &fs_inst);
+	/* create the fs_instance */
+	rc = fs_driver->ops->create_instance(fs_driver, init, opts, &fs_inst);
 	if (rc != 0) {
 		goto done;
 	}
@@ -157,7 +157,7 @@ int vfs_do_mount(const char *fs_driver_name,
 	/* success! */
 	*p_root_dir = root_dir;
 
-	/* keep a list of all mounted filesystems? */
+	/* keep a list of all mounted filesystems */
 	fs_instance_list_append(&s_inst_list, fs_inst);
 
 done:
