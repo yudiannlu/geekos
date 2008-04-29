@@ -25,8 +25,13 @@
 
 void memcpy(void *dst, const void *src, size_t n);
 void memset(void *buf, int c, size_t n);
+size_t strlen(const char *s);
 size_t strnlen(const char *s, size_t maxlen);
-int strncmp(const char* s1, const char* s2, size_t limit);
+int strcmp(const char *s1, const char *s2);
+int strncmp(const char *s1, const char *s2, size_t limit);
 char *strncpy(char *dest, const char *src, size_t limit);
+#if 0
+char *strdup(const char *s);
+#endif
 
 #endif /* GEEKOS_STRING_H */

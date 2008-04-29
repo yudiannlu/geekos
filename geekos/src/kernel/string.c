@@ -20,6 +20,7 @@
 
 #include <geekos/string.h>
 #include <geekos/types.h>
+#include <geekos/mem.h>
 
 /*
  * TODO: these could be speeded up with architecture-specific implementations
@@ -46,6 +47,15 @@ void memset(void *buf, int c, size_t n)
 	}
 }
 
+size_t strlen(const char *s)
+{
+	size_t len = 0;
+	while (*s++ != '\0') {
+		++len;
+	}
+	return len;
+}
+
 size_t strnlen(const char *s, size_t maxlen)
 {
 	size_t len = 0;
@@ -55,7 +65,19 @@ size_t strnlen(const char *s, size_t maxlen)
 	return len;
 }
 
-int strncmp(const char* s1, const char* s2, size_t limit)
+int strcmp(const char *s1, const char *s2)
+{
+	for (;;) {
+		int cmp = *s1 - *s2;
+		if (cmp != 0 || *s1 == '\0' || *s2 == '\0') {
+			return cmp;
+		}
+		++s1;
+		++s2;
+	}
+}
+
+int strncmp(const char *s1, const char *s2, size_t limit)
 {
 	size_t i = 0;
 	while (i < limit) {
@@ -86,3 +108,13 @@ char *strncpy(char *dest, const char *src, size_t limit)
 
 	return ret;
 }
+
+#if 0
+char *strdup(const char *s)
+{
+	char *dup;
+	dup = mem_alloc(strlen(s) + 1);
+	strcpy(dup, s);
+	return dup;
+}
+#endif
