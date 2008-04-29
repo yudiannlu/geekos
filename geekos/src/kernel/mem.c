@@ -107,6 +107,13 @@ void mem_init(struct multiboot_info *boot_record)
  * Allocate a buffer in the kernel heap.
  * Suspends calling thread until enough memory
  * is available to satisfy the request.
+ * The returned buffer is filled with zeroes.
+ *
+ * Parameters:
+ *   size - size in bytes of buffer to allocate
+ *
+ * Returns:
+ *   pointer to allocated, zero-filled buffer
  */
 void *mem_alloc(size_t size)
 {
@@ -120,6 +127,7 @@ void *mem_alloc(size_t size)
 	}
 	int_end_atomic(iflag);
 
+	/* fill buffer with zeroes */
 	memset(buf, '\0', size);
 
 	return buf;
