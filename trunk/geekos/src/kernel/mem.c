@@ -120,6 +120,8 @@ void *mem_alloc(size_t size)
 	}
 	int_end_atomic(iflag);
 
+	memset(buf, '\0', size);
+
 	return buf;
 }
 
