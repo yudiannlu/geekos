@@ -17,15 +17,14 @@
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef GEEKOS_BLKDEV_PAGER_H
-#define GEEKOS_BLKDEV_PAGER_H
+#ifndef GEEKOS_BLOCKDEV_PAGER_H
+#define GEEKOS_BLOCKDEV_PAGER_H
 
 #include <geekos/lba.h>
 
 struct blockdev;
 struct vm_pager;
 
-int blkdev_pager_create(struct blockdev *dev, lba_t start, u32_t num_blocks, struct vm_pager **p_pager);
+int blockdev_pager_create(struct blockdev *dev, lba_t start, u32_t num_blocks, struct vm_pager **p_pager);
 
-#endif /* GEEKOS_BLKDEV_PAGER_H */
-
+#endif /* GEEKOS_BLOCKDEV_PAGER_H */
