@@ -37,11 +37,14 @@ unsigned blocksize_size(blocksize_t blocksize);
 
 /* lba_t functions */
 lba_t lba_from_num(u32_t num);
+lba_t lba_add_offset(lba_t start, u32_t offset);
 u32_t lba_num(lba_t lba);
 bool lba_is_range_valid(lba_t start, u32_t num_blocks, u32_t total_blocks);
 size_t lba_block_offset_in_bytes(lba_t lba, blocksize_t block_size);
 size_t lba_range_size_in_bytes(u32_t num_blocks, blocksize_t block_size);
 size_t lba_get_num_blocks_in_table(blocksize_t block_size, u32_t num_entries, unsigned entry_size);
+int lba_compare(lba_t lhs, lba_t rhs);
+u32_t lba_num_blocks_in_range(lba_t start, lba_t end);
 
 #endif /* GEEKOS_LBA_H */
 

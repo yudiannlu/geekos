@@ -19,6 +19,7 @@
 
 #include <geekos/range.h>
 #include <geekos/blockdev.h>
+#include <geekos/kassert.h>
 #include <geekos/lba.h>
 
 blocksize_t blocksize_from_size(unsigned size)
@@ -39,6 +40,23 @@ lba_t lba_from_num(u32_t num)
 {
 	lba_t lba = { .val = num };
 	return lba;
+}
+
+/*
+ * Create an LBA by adding an offset to a start LBA.
+ */
+lba_t lba_add_offset(lba_t start, u32_t offset)
+{
+	lba_t result;
+	u32_t dest;
+
+	dest = start.val + offset;
+
+	/* Overflow? */
+	KASSERT(dest >= start.val);
+
+	result.val = dest;
+	return result;
 }
 
 /*
@@ -100,3 +118,40 @@ size_t lba_get_num_blocks_in_table(blocksize_t block_size, u32_t num_entries, un
 	return table_size_in_blocks;
 }
 
+/*
+ * Compare two LBAs.
+ *
+ * Parameters:
+ *    lhs - left hand LBA
+ *    rhs - right hand LBA
+ *
+ * Returns:
+ *    -1 if lhs < rhs, 0 if lhs == rhs, 1 if lhs > rhs
+ */
+int lba_compare(lba_t lhs, lba_t rhs)
+{
+	if (lhs.val < rhs.val) {
+		return -1;
+	} else if (lhs.val > rhs.val) {
+		return 1;
+	} else {
+		return 0;
+	}
+}
+
+/*
+ * Get the number of blocks in given range.
+ * Start of range is inclusive, and end of range is exclusive.
+ *
+ * Paremeters:
+ *   start - LBA of start of range (inclusive)
+ *   end - LBA of end of range (exclusive)
+ *
+ * Returns:
+ *   Number of blocks in range.
+ */
+u32_t lba_num_blocks_in_range(lba_t start, lba_t end)
+{
+	KASSERT(start.val <= end.val);
+	return end.val - start.val;
+}
