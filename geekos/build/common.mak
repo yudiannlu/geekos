@@ -5,4 +5,5 @@ COMMON_SRCS = main.c \
 	dev.c blockdev.c range.c lba.c \
 	cons.c timer.c ramdisk.c \
 	vfs.c pfat.c \
-	vm.c
+	vm.c \
+	blockdev_pager.c
