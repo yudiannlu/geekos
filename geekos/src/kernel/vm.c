@@ -82,10 +82,30 @@ static int vm_alloc_and_page_in(struct vm_pagecache *obj, u32_t page_num, struct
 }
 
 /*
+ * Create a vm_pager object.
+ *
+ * Parameters:
+ *   ops - the vm_pager_ops
+ *   p   - pointer to private data structure used by the pager
+ *   p_pager - where the pointer to the returned vm_pager object should be returned
+ */
+int vm_pager_create(struct vm_pager_ops *ops, void *p, struct vm_pager **p_pager)
+{
+	struct vm_pager *pager;
+
+	pager = mem_alloc(sizeof(struct vm_pager));
+	pager->ops = ops;
+	pager->p = p;
+
+	*p_pager = pager;
+	return 0;
+}
+
+/*
  * Create a vm_pagecache using the given pager
  * as its underlying data store.
  */
-int vm_create_vm_pagecache(struct vm_pager *pager, struct vm_pagecache **p_obj)
+int vm_pagecache_create(struct vm_pager *pager, struct vm_pagecache **p_obj)
 {
 	struct vm_pagecache *obj;
 
