@@ -26,6 +26,8 @@ unsigned range_umin(unsigned a, unsigned b);
 unsigned range_umax(unsigned a, unsigned b);
 
 bool range_is_valid_u32(u32_t start, u32_t num, u32_t total);
+int range_bit_count(unsigned val);
+bool range_is_power_of_two(unsigned val);
 
 #endif /* RANGE_H */
 
