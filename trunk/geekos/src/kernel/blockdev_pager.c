@@ -20,15 +20,13 @@
 #include <geekos/mem.h>
 #include <geekos/blockdev.h>
 #include <geekos/vm.h>
-#include <geekos/blkdev_pager.h>
+#include <geekos/blockdev_pager.h>
 
 /*
  * Create a vm_pager that pages to/from a (range of) a block device.
  */
-int blkdev_pager_create(struct blockdev *dev, lba_t start, u32_t num_blocks, struct vm_pager **p_pager)
+int blockdev_pager_create(struct blockdev *dev, lba_t start, u32_t num_blocks, struct vm_pager **p_pager)
 {
 	/* TODO: implement */
 	return -1;
 }
-
-
