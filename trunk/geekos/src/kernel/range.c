@@ -55,3 +55,26 @@ bool range_is_valid_u32(u32_t start, u32_t num, u32_t total)
 
 	return start <= (total - num);
 }
+
+/*
+ * Return the number of bits set to 1 in the given value.
+ */
+int range_bit_count(unsigned val)
+{
+	int bit_count = 0;
+
+	while (val != 0) {
+		bit_count += (val & 1);
+		val >>= 1;
+	}
+
+	return bit_count;
+}
+
+/*
+ * Return true iff given value is a power of 2.
+ */
+bool range_is_power_of_two(unsigned val)
+{
+	return range_bit_count(val) == 1;
+}
