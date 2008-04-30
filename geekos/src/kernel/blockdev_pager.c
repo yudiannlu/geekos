@@ -55,7 +55,7 @@ static int blockdev_pager_rw_page(struct vm_pager *pager, void *buf, u32_t page_
 	 * Special case: see if we're accessing
 	 * an incomplete page of data at the end of the range
 	 * of blocks covered by this pager.
-	 * If so, set io_max_lba such that
+	 * If so, set io_end_lba such that
 	 * we avoid reading/writing past end of range.
 	 */
 	range_end_lba = lba_add_offset(blkdev_pager->start, blkdev_pager->num_blocks);
