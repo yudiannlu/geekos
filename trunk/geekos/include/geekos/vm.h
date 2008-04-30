@@ -61,7 +61,8 @@ struct vm_pagecache {
 /*
  * Functions
  */
-int vm_create_vm_pagecache(struct vm_pager *pager, struct vm_pagecache **p_obj);
+int vm_pager_create(struct vm_pager_ops *ops, void *p, struct vm_pager **p_pager);
+int vm_pagecache_create(struct vm_pager *pager, struct vm_pagecache **p_obj);
 
 int vm_pagein(struct vm_pager *pager, u32_t page_num, struct frame *frame);
 int vm_pageout(struct vm_pager *pager, u32_t page_num, struct frame *frame);
