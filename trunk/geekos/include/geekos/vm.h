@@ -59,16 +59,17 @@ struct vm_pagecache {
 };
 
 /*
- * Functions
+ * vm_pager functions
  */
 int vm_pager_create(struct vm_pager_ops *ops, void *p, struct vm_pager **p_pager);
-int vm_pagecache_create(struct vm_pager *pager, struct vm_pagecache **p_obj);
-
 int vm_pagein(struct vm_pager *pager, u32_t page_num, struct frame *frame);
 int vm_pageout(struct vm_pager *pager, u32_t page_num, struct frame *frame);
 
+/*
+ * vm_pagecache functions
+ */
+int vm_pagecache_create(struct vm_pager *pager, struct vm_pagecache **p_obj);
 int vm_lock_page(struct vm_pagecache *obj, u32_t page_num, struct frame **p_frame);
 int vm_unlock_page(struct vm_pagecache *obj, struct frame *frame);
 
 #endif /* GEEKOS_VM_H */
-

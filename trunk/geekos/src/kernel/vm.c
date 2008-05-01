@@ -102,6 +102,22 @@ int vm_pager_create(struct vm_pager_ops *ops, void *p, struct vm_pager **p_pager
 }
 
 /*
+ * Page in (read) data into given frame.
+ */
+int vm_pagein(struct vm_pager *pager, u32_t page_num, struct frame *frame)
+{
+	return pager->ops->read_page(pager, mem_frame_to_pa(frame), page_num);
+}
+
+/*
+ * Page out (write) data contained in given frame.
+ */
+int vm_pageout(struct vm_pager *pager, u32_t page_num, struct frame *frame)
+{
+	return pager->ops->write_page(pager, mem_frame_to_pa(frame), page_num);
+}
+
+/*
  * Create a vm_pagecache using the given pager
  * as its underlying data store.
  */
@@ -118,22 +134,6 @@ int vm_pagecache_create(struct vm_pager *pager, struct vm_pagecache **p_obj)
 
 	*p_obj = obj;
 	return 0;
-}
-
-/*
- * Page in (read) data into given frame.
- */
-int vm_pagein(struct vm_pager *pager, u32_t page_num, struct frame *frame)
-{
-	return pager->ops->read_page(pager, mem_frame_to_pa(frame), page_num);
-}
-
-/*
- * Page out (write) data contained in given frame.
- */
-int vm_pageout(struct vm_pager *pager, u32_t page_num, struct frame *frame)
-{
-	return pager->ops->write_page(pager, mem_frame_to_pa(frame), page_num);
 }
 
 /*
