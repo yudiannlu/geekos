@@ -18,7 +18,7 @@
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include <stdbool.h>
+#include <geekos/types.h>
 #include <geekos/string.h>
 #include <geekos/kassert.h>
 #include <arch/cpu.h>
@@ -130,4 +130,70 @@ void x86_seg_init_gdt(void)
 	limit_and_base[1] = ((u32_t) s_gdt) & 0xFFFF; /* low 16 bits of base addr */
 	limit_and_base[2] = ((u32_t) s_gdt) >> 16;    /* high 16 bits of base addr */
 	x86_load_gdtr(limit_and_base);
+}
+
+/*
+ * Get the current value of the eflags register.
+ */
+u32_t x86_get_eflags(void)
+{
+	u32_t eflags;
+	__asm__ __volatile__ ("pushfl; popl %0" : "=a" (eflags));
+	return eflags;
+}
+
+/*
+ * Set the current value of the eflags register.
+ */
+void x86_set_eflags(u32_t eflags)
+{
+	__asm__ __volatile__ ("pushl %0; popfl" : : "a" (eflags));
+}
+
+/*
+ * Attempt to execute the CPUID instruction,
+ * filling in as must as possible of the given
+ * x86_cpuid_info struct.
+ *
+ * Returns true if successful, false if CPUID is not supported.
+ */
+bool x86_cpuid(struct x86_cpuid_info *cpuid_info)
+{
+	u32_t eflags, eflags_orig;
+	u32_t eax, ebx, ecx, edx;
+
+	/* get eflags */
+	eflags = x86_get_eflags();
+	eflags_orig = eflags;
+
+	/* twiddle the EFLAGS_CPUID_SUPPORTED bit */
+	eflags ^= EFLAGS_CPUID_SUPPORTED;
+	KASSERT(eflags_orig != eflags);
+
+	/* attempt reload modified eflags */
+	x86_set_eflags(eflags);
+
+	/* read eflags back out, to see if the modification "stuck" */
+	eflags = x86_get_eflags();
+
+	if (eflags_orig == eflags) {
+		/* CPUID not supported */
+		return false;
+	}
+
+	/* eax=0: vendor id */
+	eax = 0;
+	__asm__ __volatile__ ("cpuid" : "=b" (ebx), "=c" (ecx), "=d" (edx) : "a" (eax));
+	memcpy(&cpuid_info->vendor_id[0], &ebx, 4);
+	memcpy(&cpuid_info->vendor_id[4], &edx, 4);
+	memcpy(&cpuid_info->vendor_id[8], &ecx, 4);
+
+	/* eax=1: processor info, feature bits */
+	eax = 1;
+	__asm__ __volatile__ ("cpuid" : "=a" (eax), "=b" (ebx), "=c" (ecx), "=d" (edx) : "a" (eax));
+	memcpy(&cpuid_info->proc_sig, &eax, 4);
+	memcpy(&cpuid_info->feature_info_edx, &edx, 4);
+	memcpy(&cpuid_info->feature_info_ecx, &ecx, 4);
+
+	return true;
 }

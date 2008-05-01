@@ -1,6 +1,5 @@
 /*
  * GeekOS entry point and main function
- *
  * Copyright (C) 2001-2008, David H. Hovemeyer <david.hovemeyer@gmail.com>
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,6 +21,7 @@
 #include <geekos/version.h>
 #include <geekos/cons.h>
 #include <geekos/mem.h>
+#include <geekos/vm.h>
 #include <geekos/int.h>
 #include <geekos/irq.h>
 #include <geekos/thread.h>
@@ -61,6 +61,7 @@ void geekos_main(u32_t loader_magic, struct multiboot_info *boot_record)
 	cons_printf("GeekOS %d.%d.%d on %s\n", GEEKOS_MAJOR, GEEKOS_MINOR, GEEKOS_PATCH, GEEKOS_ARCH);
 	mem_init(boot_record);
 	int_init();
+	vm_init_paging(boot_record);
 	irq_init();
 	thread_init();
 	workqueue_init();
