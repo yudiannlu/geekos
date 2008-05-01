@@ -72,7 +72,7 @@ void int_install_handler(int int_num, int_handler_t *handler)
 bool int_enabled(void)
 {
 	u32_t eflags;
-	__asm__ __volatile__ ("pushfl; popl %0" : "=a" (eflags));
+	eflags = x86_get_eflags();
 	return (eflags & EFLAGS_IF);
 }
 

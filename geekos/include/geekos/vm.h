@@ -23,7 +23,9 @@
 #include <geekos/types.h>
 #include <geekos/mem.h>
 #include <geekos/synch.h>
+#include <arch/vm.h>
 
+struct multiboot_info;
 struct vm_pager_ops;
 
 /*
@@ -57,6 +59,11 @@ struct vm_pagecache {
 	struct frame_list pagelist; /* list of pages containing data from underlying data store */
 	struct vm_pager *pager;    /* the underlying data store */
 };
+
+/*
+ * arch-dependent VM functions
+ */
+void vm_init_paging(struct multiboot_info *boot_info);
 
 /*
  * vm_pager functions

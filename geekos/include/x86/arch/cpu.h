@@ -101,6 +101,86 @@ struct x86_interrupt_gate {
 	u16_t offset_high         ;
 };
 
+/*
+ * CPUID information.
+ */
+struct x86_cpuid_info {
+	/* function 0: vendor id string */
+	char vendor_id[12];
+
+	/* function 1: processor signature in eax register */
+	struct {
+		unsigned stepping_id     : 4;
+		unsigned model_number    : 4;
+		unsigned family_code     : 4;
+		unsigned type            : 2;
+		unsigned unused1         : 2;
+		unsigned extended_model  : 4;
+		unsigned extended_family : 8;
+		unsigned unused2         : 4;
+	} proc_sig;
+
+	/* function 1: feature flags in edx register */
+	struct {
+		unsigned fpu : 1;
+		unsigned vme : 1;
+		unsigned de : 1;
+		unsigned pse : 1;
+		unsigned tsc : 1;
+		unsigned msr : 1;
+		unsigned pae : 1;
+		unsigned mce : 1;
+		unsigned cx8 : 1;
+		unsigned apic : 1;
+		unsigned reserved1 : 1;
+		unsigned sep : 1;
+		unsigned mtrr : 1;
+		unsigned pge : 1;
+		unsigned mca : 1;
+		unsigned cmov : 1;
+		unsigned pat : 1;
+		unsigned pse36 : 1;
+		unsigned psn : 1;
+		unsigned clfsh : 1;
+		unsigned reserved2 : 1;
+		unsigned ds : 1;
+		unsigned acpi : 1;
+		unsigned mmx : 1;
+		unsigned fxsr : 1;
+		unsigned sse : 1;
+		unsigned sse2 : 1;
+		unsigned ss : 1;
+		unsigned htt : 1;
+		unsigned tm : 1;
+		unsigned ia64 : 1;
+		unsigned pbe : 1;
+	} feature_info_edx;
+
+	/* function 1: feature flags in ecx register */
+	struct {
+		unsigned sse3 : 1;
+		unsigned reserved1 : 1;
+		unsigned dtes64 : 1;
+		unsigned monitor : 1;
+		unsigned ds_cpl : 1;
+		unsigned vmx : 1;
+		unsigned smx : 1;
+		unsigned est : 1;
+		unsigned tm2 : 1;
+		unsigned ssse3 : 1;
+		unsigned cnxt_id : 1;
+		unsigned reserved2 : 2;
+		unsigned cx16 : 1;
+		unsigned xtpr : 1;
+		unsigned pdcm : 1;
+		unsigned reserved3 : 2;
+		unsigned dca : 1;
+		unsigned sse4_1 : 1;
+		unsigned sse4_2 : 1;
+		unsigned reserved4 : 11;
+	} feature_info_ecx;
+};
+
 /* initialize segment descriptors */
 void x86_seg_init_null(struct x86_segment_descriptor *desc,
 	u32_t base, u32_t num_pages, int priv);
@@ -122,6 +202,13 @@ void x86_load_idtr(u16_t *limit_and_base);
 
 /* load TSS */
 void x86_load_tr(struct x86_segment_descriptor *tss_desc);
+
+/* get/set eflags */
+u32_t x86_get_eflags(void);
+void x86_set_eflags(u32_t eflags);
+
+/* CPUID */
+bool x86_cpuid(struct x86_cpuid_info *cpuid_info);
 #endif
 
 #define PRIV_KERN 0
@@ -140,6 +227,7 @@ void x86_load_tr(struct x86_segment_descriptor *tss_desc);
 /*
  * bits in eflags register
  */
-#define EFLAGS_IF (1 << 9)
+#define EFLAGS_IF              (1 << 9)
+#define EFLAGS_CPUID_SUPPORTED (1 << 21)
 
 #endif /* ARCH_CPU_H */
