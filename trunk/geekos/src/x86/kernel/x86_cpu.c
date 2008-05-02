@@ -38,7 +38,7 @@
 static struct x86_segment_descriptor s_gdt[GDT_LEN];
 static struct x86_tss s_tss;
 
-#ifndef NDEBUG
+#if 0
 static void dump_gdt(void)
 {
 	int i;
@@ -112,19 +112,15 @@ void x86_seg_init_gdt(void)
 	u16_t limit_and_base[3];
 
 	KASSERT(sizeof(struct x86_segment_descriptor) == 8);
-	cons_printf("&s_gdt = %lx, sizeof(s_gdt) = %lu\n", (ulong_t)s_gdt, (ulong_t)sizeof(s_gdt));
 
+	/* Initialize the GDT */
 	memset(&s_gdt, '\0', sizeof(s_gdt));
-	cons_printf("gdt is cleared\n");
 	x86_seg_init_code(&s_gdt[1], 0, 1048576, PRIV_KERN);
 	x86_seg_init_data(&s_gdt[2], 0, 1048576, PRIV_KERN);
 	x86_seg_init_tss(&s_gdt[3], &s_tss);
 	/* TODO: user code/data */
 
-#ifndef NDEBUG
-	dump_gdt();
-#endif
-
+	/* load the GDTR */
 	limit_and_base[0] = sizeof(s_gdt);            /* size of GDT */
 	limit_and_base[1] = ((u32_t) s_gdt) & 0xFFFF; /* low 16 bits of base addr */
 	limit_and_base[2] = ((u32_t) s_gdt) >> 16;    /* high 16 bits of base addr */
