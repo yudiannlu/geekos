@@ -24,11 +24,18 @@
 #define VM_NUM_PAGE_TABLE_ENTRIES  1024
 #define VM_NUM_PAGE_DIR_ENTRIES    1024
 
-#define VM_PAGE_DIRECTORY_INDEX(addr) (((addr) >> 22) & 0x3ff)
-#define VM_PAGE_TABLE_INDEX(addr)     (((addr) >> 12) & 0x3ff)
-
 #define VM_PT_SPAN_POWER        22
 #define VM_PT_SPAN              (1 << VM_PT_SPAN_POWER)  /* Number of bytes of VM spanned by a page table */
+
+/* index of entry for given phys addr in page directory */
+#define VM_PAGE_DIR_INDEX(addr) (((addr) >> 22) & 0x3ff)
+
+/* index of entry for given phys addr in page table */
+#define VM_PAGE_TABLE_INDEX(addr)     (((addr) >> 12) & 0x3ff)
+
+/* base address of a physical page */
+#define VM_PAGE_BASE_ADDR(addr)       ((addr) >> 12)
+
 /*
  * Bits for flags field of pde_t and pte_t.
  */
@@ -48,10 +55,10 @@ typedef struct {
 	unsigned flags       : 4;
 	unsigned accesed     : 1;
 	unsigned reserved    : 1;
-	unsigned large_pages : 1;
+	unsigned page_size   : 1; /* if 1, refers to a 4M page */
 	unsigned global_page : 1;
 	unsigned kernel_info : 3;
-	unsigned baseaddr    : 20;
+	unsigned base_addr   : 20;
 } pde_t;
 
 /*
@@ -67,7 +74,7 @@ typedef struct {
 	unsigned pte_attribute : 1;
 	unsigned global_page   : 1;
 	unsigned kernel_info   : 3;
-	unsigned baseaddr      : 20;
+	unsigned base_addr     : 20;
 } pte_t;
 
 /*

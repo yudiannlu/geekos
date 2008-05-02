@@ -1,6 +1,5 @@
 /*
  * GeekOS - x86 CPU support
- *
  * Copyright (c) 2001-2008, David H. Hovemeyer <david.hovemeyer@gmail.com>
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -148,6 +147,42 @@ u32_t x86_get_eflags(void)
 void x86_set_eflags(u32_t eflags)
 {
 	__asm__ __volatile__ ("pushl %0; popfl" : : "a" (eflags));
+}
+
+/*
+ * Get current value of the cr0 register.
+ */
+u32_t x86_get_cr0(void)
+{
+	u32_t cr0;
+	__asm__ __volatile__ ("movl %%cr0, %0" : "=a" (cr0));
+	return cr0;
+}
+
+/*
+ * Set the current value of the cr0 register.
+ */
+void x86_set_cr0(u32_t cr0)
+{
+	__asm__ __volatile__ ("movl %0, %%cr0" : : "a" (cr0));
+}
+
+/*
+ * Get current value of the cr3 register.
+ */
+u32_t x86_get_cr3(void)
+{
+	u32_t cr3;
+	__asm__ __volatile__ ("movl %%cr3, %0" : "=a" (cr3));
+	return cr3;
+}
+
+/*
+ * Set the current value of the cr3 register.
+ */
+void x86_set_cr3(u32_t cr3)
+{
+	__asm__ __volatile__ ("movl %0, %%cr3" : : "a" (cr3));
 }
 
 /*
