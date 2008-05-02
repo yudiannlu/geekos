@@ -1,6 +1,5 @@
 /*
  * GeekOS - x86 CPU support
- *
  * Copyright (c) 2001-2008, David H. Hovemeyer <david.hovemeyer@gmail.com>
  */
 
@@ -207,6 +206,14 @@ void x86_load_tr(struct x86_segment_descriptor *tss_desc);
 u32_t x86_get_eflags(void);
 void x86_set_eflags(u32_t eflags);
 
+/* get/set cr0 */
+u32_t x86_get_cr0(void);
+void x86_set_cr0(u32_t cr0);
+
+/* get/set cr3 (the page directory base physical address) */
+u32_t x86_get_cr3(void);
+void x86_set_cr3(u32_t cr3);
+
 /* get/set cr4 */
 u32_t x86_get_cr4(void);
 void x86_set_cr4(u32_t cr4);
@@ -229,10 +236,15 @@ bool x86_cpuid(struct x86_cpuid_info *cpuid_info);
 #define KERN_DS SELECTOR(2, SEL_GDT, 0)
 
 /*
- * bits in eflags register
+ * Bits in eflags register.
  */
-#define EFLAGS_IF              (1 << 9)
-#define EFLAGS_CPUID_SUPPORTED (1 << 21)
+#define EFLAGS_IF              (1 << 9)   /* interrupts enabled */
+#define EFLAGS_CPUID_SUPPORTED (1 << 21)  /* CPUID instruction supported */
+
+/*
+ * Bits in cr0 register.
+ */
+#define CR0_PG        (1 << 31)    /* enable paging */
 
 /*
  * Bits in cr4 register.
