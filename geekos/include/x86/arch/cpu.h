@@ -207,6 +207,10 @@ void x86_load_tr(struct x86_segment_descriptor *tss_desc);
 u32_t x86_get_eflags(void);
 void x86_set_eflags(u32_t eflags);
 
+/* get/set cr4 */
+u32_t x86_get_cr4(void);
+void x86_set_cr4(u32_t cr4);
+
 /* CPUID */
 bool x86_cpuid(struct x86_cpuid_info *cpuid_info);
 #endif
@@ -229,5 +233,10 @@ bool x86_cpuid(struct x86_cpuid_info *cpuid_info);
  */
 #define EFLAGS_IF              (1 << 9)
 #define EFLAGS_CPUID_SUPPORTED (1 << 21)
+
+/*
+ * Bits in cr4 register.
+ */
+#define CR4_PSE        (1 << 4)    /* page size extensions */
 
 #endif /* ARCH_CPU_H */

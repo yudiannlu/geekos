@@ -151,6 +151,24 @@ void x86_set_eflags(u32_t eflags)
 }
 
 /*
+ * Get current value of the cr4 register.
+ */
+u32_t x86_get_cr4(void)
+{
+	u32_t cr4;
+	__asm__ __volatile__ ("movl %%cr4, %0" : "=a" (cr4));
+	return cr4;
+}
+
+/*
+ * Set the current value of the cr4 register.
+ */
+void x86_set_cr4(u32_t cr4)
+{
+	__asm__ __volatile__ ("movl %0, %%cr4" : : "a" (cr4));
+}
+
+/*
  * Attempt to execute the CPUID instruction,
  * filling in as must as possible of the given
  * x86_cpuid_info struct.
