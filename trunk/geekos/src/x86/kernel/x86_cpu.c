@@ -201,7 +201,7 @@ void x86_set_cr4(u32_t cr4)
 
 /*
  * Attempt to execute the CPUID instruction,
- * filling in as must as possible of the given
+ * filling in as much as possible of the given
  * x86_cpuid_info struct.
  *
  * Returns true if successful, false if CPUID is not supported.
