@@ -24,9 +24,6 @@
 #include <geekos/vm.h>
 #include <arch/cpu.h>
 
-#define USE_4M_PAGES
-#define ENABLE_PAGING
-
 #define IS_PT_SPAN_ALIGNED(addr) (((addr) & 0xFFC00000) == (addr))
 
 static pde_t *s_kernel_pagedir;
@@ -79,7 +76,6 @@ static void vm_set_pde(pde_t *pgdir, unsigned flags, ulong_t vaddr, ulong_t padd
 	pgdir[VM_PAGE_DIR_INDEX(vaddr)] = pde;
 }
 
-#ifdef USE_4M_PAGES
 /*
  * Install a large (4M) page in the page directory.
  *
@@ -103,19 +99,15 @@ static void vm_set_pde_4m(pde_t *pgdir, unsigned flags, ulong_t vaddr, ulong_t p
 
 	pgdir[VM_PAGE_DIR_INDEX(vaddr)] = pde;
 }
-#endif
 
 void vm_init_paging(struct multiboot_info *boot_info)
 {
-#ifdef USE_4M_PAGES
 	struct x86_cpuid_info cpuid_info;
-#endif
 	struct frame *pgdir_frame;
 	struct frame *pgtab_frame;
 	pte_t *pgtab;
 	ulong_t paddr, mem_max;
 
-#ifdef USE_4M_PAGES
 	/*
 	 * Check CPUID instruction to see if large pages (PSE feature)
 	 * is supported.
@@ -128,7 +120,6 @@ void vm_init_paging(struct multiboot_info *boot_info)
 	 * Enable PSE by setting the PSE bit in CR4.
 	 */
 	x86_set_cr4(x86_get_cr4() | CR4_PSE);
-#endif
 
 	/*
 	 * Allocate kernel page directory.
@@ -145,7 +136,6 @@ void vm_init_paging(struct multiboot_info *boot_info)
 		mem_max = (ulong_t) (1 << 31);
 	}
 
-#ifdef USE_4M_PAGES
 	/*
 	 * We need a page table for the low 4M of the kernel address space,
 	 * since we want to leave the zero page unmapped (to catch null pointer derefs).
@@ -172,13 +162,12 @@ void vm_init_paging(struct multiboot_info *boot_info)
 	for (paddr = VM_PT_SPAN; paddr < mem_max; paddr += VM_PT_SPAN) {
 		vm_set_pde_4m(s_kernel_pagedir, VM_WRITE|VM_READ|VM_EXEC, paddr, paddr);
 	}
-#endif
 
-#ifdef ENABLE_PAGING
 	/*
 	 * Turn on paging!
 	 */
 	x86_set_cr3((u32_t) s_kernel_pagedir); /* set the kernel page directory */
 	x86_set_cr0(x86_get_cr0() | CR0_PG);   /* turn on the paging bit in cr0 */
-#endif
+
+	cons_printf("Paging enabled\n");
 }
