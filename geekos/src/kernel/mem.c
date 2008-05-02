@@ -22,7 +22,7 @@
 #include <geekos/string.h>
 #include <geekos/thread.h>
 
-#define HEAP_SIZE (128*1024)
+#define HEAP_SIZE (512*1024)
 
 IMPLEMENT_LIST_CLEAR(frame_list, frame)
 IMPLEMENT_LIST_APPEND(frame_list, frame)
@@ -41,13 +41,14 @@ static struct thread_queue s_frame_waitqueue;
 
 struct scan_region_data {
 	bool heap_created;
+	unsigned heap_size;
+	unsigned avail_pages;
 };
 
 static void mem_heap_init(ulong_t start, ulong_t end)
 {
 	extern char *g_heapstart, *g_heapend;
 
-	cons_printf("Heap from %lx to %lx\n", start, end);
 	g_heapstart = (char *) start;
 	g_heapend   = (char *) end;
 }
@@ -75,10 +76,14 @@ static ulong_t mem_scan_region(ulong_t start, ulong_t end, frame_state_t state, 
 		mem_heap_init(start, start + HEAP_SIZE);
 		start += HEAP_SIZE;
 		data->heap_created = true;
+		data->heap_size = HEAP_SIZE;
 	}
 
 	/* set state of all frames in region, and add to freelist if appropriate */
 	mem_set_region_state(start, end, state);
+	if (state == FRAME_AVAIL) {
+		data->avail_pages += (end - start) / PAGE_SIZE;
+	}
 
 	return end;
 }
@@ -91,16 +96,16 @@ void mem_clear_bss(void)
 
 void mem_init(struct multiboot_info *boot_record)
 {
-	struct scan_region_data data = { .heap_created = false };
+	struct scan_region_data data = { 0 };
 
-	cons_printf("Initializing segments\n");
 	mem_init_segments();
-	cons_printf("Initialzing framelist\n");
 	mem_create_framelist(boot_record, &s_framelist, &s_numframes);
-	cons_printf("Scanning memory regions\n");
 	mem_scan_regions(boot_record, &mem_scan_region, &data);
 
 	PANIC_IF(!data.heap_created, "Couldn't create kernel heap!");
+
+	cons_printf("Memory: %u bytes in heap, %u available pages\n",
+		data.heap_size, data.avail_pages);
 }
 
 /*

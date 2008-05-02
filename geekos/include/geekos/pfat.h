@@ -1,6 +1,5 @@
 /*
  * GeekOS - PFAT filesystem
- *
  * Copyright (C) 2001-2008, David H. Hovemeyer <david.hovemeyer@gmail.com>
  *
  * This code is free software; you can redistribute it and/or modify it
