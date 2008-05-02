@@ -25,39 +25,83 @@
 #include <arch/cpu.h>
 
 #define USE_4M_PAGES
-/*#define ENABLE_PAGING*/
+#define ENABLE_PAGING
+
+#define IS_PT_SPAN_ALIGNED(addr) (((addr) & 0xFFC00000) == (addr))
 
 static pde_t *s_kernel_pagedir;
 
-static void vm_set_pte(pte_t *pgtab, unsigned index, unsigned flags, ulong_t addr)
+/*
+ * Install a page table entry mapping given virtual to physical
+ * page address in given page table.
+ *
+ * Parameters:
+ *  pgtab - pointer to the page table
+ *  flags - PTE flags
+ *  vaddr - virtual address
+ *  paddr_of_frame - physical address of the page frame to map
+ */
+static void vm_set_pte(pte_t *pgtab, unsigned flags, ulong_t vaddr, ulong_t paddr_of_frame)
 {
 	pte_t pte = { 0 };
+
+	KASSERT(mem_is_page_aligned(vaddr));
+	KASSERT(mem_is_page_aligned(paddr_of_frame));
+
 	pte.present = 1;
 	pte.flags = flags;
-	pte.base_addr = VM_PAGE_BASE_ADDR(addr);
+	pte.base_addr = VM_PAGE_BASE_ADDR(paddr_of_frame);
 
-	pgtab[index] = pte;
+	pgtab[VM_PAGE_TABLE_INDEX(vaddr)] = pte;
 }
 
-static void vm_set_pde(pde_t *pgdir, unsigned index, unsigned flags, ulong_t addr)
+/*
+ * Install a page directory entry mapping given virtual to physical
+ * address of page table in given page directory.
+ *
+ * Parameters:
+ *  pgdir - pointer to the page directory
+ *  flags - PDE flags
+ *  vaddr - virtual address (must be an even multiple of 4M, the span of one page table)
+ *  paddr_of_pagetable - physical address of the page table
+ */
+static void vm_set_pde(pde_t *pgdir, unsigned flags, ulong_t vaddr, ulong_t paddr_of_pagetable)
 {
 	pde_t pde = { 0 };
+
+	KASSERT(IS_PT_SPAN_ALIGNED(vaddr));
+	KASSERT(mem_is_page_aligned(paddr_of_pagetable));
+
 	pde.present = 1;
 	pde.flags = flags;
-	pde.base_addr = VM_PAGE_BASE_ADDR(addr);
+	pde.base_addr = VM_PAGE_BASE_ADDR(paddr_of_pagetable);
+
+	pgdir[VM_PAGE_DIR_INDEX(vaddr)] = pde;
 }
 
 #ifdef USE_4M_PAGES
 /*
- * Set a large (4M) page in the page directory.
+ * Install a large (4M) page in the page directory.
+ *
+ * Parameters:
+ *  pgdir - pointer to the page directory
+ *  flags - PDE flags
+ *  vaddr - virtual address (must be an even multiple of 4M, the span of one page table)
+ *  paddr_of_pagetable - physical address of the 4M frame
  */
-static void vm_set_pde_4m(pde_t *pgdir, unsigned index, unsigned flags, ulong_t addr)
+static void vm_set_pde_4m(pde_t *pgdir, unsigned flags, ulong_t vaddr, ulong_t paddr_of_frame)
 {
 	pde_t pde = { 0 };
+
+	KASSERT(IS_PT_SPAN_ALIGNED(vaddr));
+	KASSERT(mem_is_page_aligned(paddr_of_frame));
+
 	pde.present = 1;
 	pde.flags = flags;
 	pde.page_size = 1; /* make it a 4M page */
-	pde.base_addr = VM_PAGE_BASE_ADDR(addr);
+	pde.base_addr = VM_PAGE_BASE_ADDR(paddr_of_frame);
+
+	pgdir[VM_PAGE_DIR_INDEX(vaddr)] = pde;
 }
 #endif
 
@@ -69,7 +113,7 @@ void vm_init_paging(struct multiboot_info *boot_info)
 	struct frame *pgdir_frame;
 	struct frame *pgtab_frame;
 	pte_t *pgtab;
-	ulong_t addr, mem_max;
+	ulong_t paddr, mem_max;
 
 #ifdef USE_4M_PAGES
 	/*
@@ -113,22 +157,20 @@ void vm_init_paging(struct multiboot_info *boot_info)
 	/*
 	 * Initialize low page table, leaving page 0 unmapped
 	 */
-	for (addr = PAGE_SIZE; addr < VM_PT_SPAN; addr += PAGE_SIZE) {
-		unsigned index = VM_PAGE_TABLE_INDEX(addr);
-		vm_set_pte(pgtab, index, VM_WRITE|VM_READ|VM_EXEC, addr);
+	for (paddr = PAGE_SIZE; paddr < VM_PT_SPAN; paddr += PAGE_SIZE) {
+		vm_set_pte(pgtab, VM_WRITE|VM_READ|VM_EXEC, paddr, paddr);
 	}
 
 	/*
 	 * Add low page table to the kernel pagedir.
 	 */
-	vm_set_pde(s_kernel_pagedir, 0, VM_WRITE|VM_READ|VM_EXEC, 0);
+	vm_set_pde(s_kernel_pagedir, VM_WRITE|VM_READ|VM_EXEC, 0UL, (u32_t) pgtab);
 
 	/*
 	 * Use 4M pages to map the rest of the low 2G of memory
 	 */
-	for (addr = VM_PT_SPAN; addr < mem_max; addr += VM_PT_SPAN) {
-		unsigned index = VM_PAGE_DIR_INDEX(addr);
-		vm_set_pde_4m(s_kernel_pagedir, index, VM_WRITE|VM_READ|VM_EXEC, addr);
+	for (paddr = VM_PT_SPAN; paddr < mem_max; paddr += VM_PT_SPAN) {
+		vm_set_pde_4m(s_kernel_pagedir, VM_WRITE|VM_READ|VM_EXEC, paddr, paddr);
 	}
 #endif
 
