@@ -27,11 +27,11 @@
 #define VM_PT_SPAN_POWER        22
 #define VM_PT_SPAN              (1 << VM_PT_SPAN_POWER)  /* Number of bytes of VM spanned by a page table */
 
-/* index of entry for given phys addr in page directory */
-#define VM_PAGE_DIR_INDEX(addr) (((addr) >> 22) & 0x3ff)
+/* index of entry for given virtual address in page directory */
+#define VM_PAGE_DIR_INDEX(vaddr)      (((vaddr) >> 22) & 0x3ff)
 
-/* index of entry for given phys addr in page table */
-#define VM_PAGE_TABLE_INDEX(addr)     (((addr) >> 12) & 0x3ff)
+/* index of entry for given virtual address in page table */
+#define VM_PAGE_TABLE_INDEX(vaddr)    (((vaddr) >> 12) & 0x3ff)
 
 /* base address of a physical page */
 #define VM_PAGE_BASE_ADDR(addr)       ((addr) >> 12)
