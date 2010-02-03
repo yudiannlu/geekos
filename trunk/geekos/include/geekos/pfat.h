@@ -60,7 +60,7 @@ struct pfat_entry {
 /*
  * Stored in "next" field of pfat_entry to terminate allocation chain
  */
-#define PFAT_END_OF_CHAIN 0x7FFFFFFF */
+#define PFAT_END_OF_CHAIN 0x7FFFFFFF
 
 /*
  * PFAT directory entry.
