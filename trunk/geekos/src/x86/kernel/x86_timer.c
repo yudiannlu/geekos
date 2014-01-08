@@ -33,7 +33,7 @@ static void timer_int_handler(struct thread_context *context)
 
 void timer_init(void)
 {
-	cons_printf("Timer initialized\n");
+	cons_printf("Initialize timer ...............");
 	/*
 	 * FIXME: for now, just leave the default 18Hz periodic timer.
 	 */
@@ -44,4 +44,5 @@ void timer_init(void)
 	 * enable interrupt handling and preemption */
 	int_enable();
 	g_preemption = true;
+	cons_printf(".... [OK]\n");
 }

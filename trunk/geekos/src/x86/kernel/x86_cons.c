@@ -3,6 +3,8 @@
  *
  * Copyright (C) 2001-2008, David H. Hovemeyer <david.hovemeyer@gmail.com>
  *
+ * modified: Matthias Aechtner (2014)
+ *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
  * published by the Free Software Foundation.
@@ -18,6 +20,7 @@
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
+#include <geekos/kassert.h>
 #include <geekos/string.h>
 #include <geekos/cons.h>
 #include <arch/ioport.h>
@@ -38,12 +41,14 @@ void x86cons_cleartoeol(struct console *cons);
 #define VALID_ROW(row) ((row) >= 0 && (row) < VGA_NUMROWS)
 #define VALID_COL(col) ((col) >= 0 && (col) < VGA_NUMCOLS)
 
-/* Address of character at current cursor position in the video memory */
-#define CUR_ADDR(cons) \
-(((u8_t *)VGA_VIDMEM) + ((cons)->y * VGA_BYTES_PER_ROW) + ((cons)->x * 2))
-
 #define ROW_ADDR(row) \
 (((u8_t *) VGA_VIDMEM) + ((row) * VGA_BYTES_PER_ROW))
+
+#define ADDR(x, y)  (ROW_ADDR(y) + (x) * 2)
+
+/* Address of character at current cursor position in the video memory */
+#define CUR_ADDR(cons)   ADDR((cons)->x, (cons)->y)
+
 
 #define VGA_CRT_ADDR_REG 0x3D4
 #define VGA_CRT_DATA_REG 0x3D5
@@ -61,7 +66,24 @@ struct x86cons {
 	u8_t attr;  /* current attribute */
 };
 
-static void x86cons_scroll(void)
+/* clear N positions from position (x,y) 
+ * without moving cursor or CUR_ADDR(cons) */
+static void x86cons_clear_area(struct x86cons *cons, int x, int y, int N)
+{
+	u8_t *ptr, *final;
+     
+        /* area must be entirely on screen (otherwise internal error) */
+        KASSERT(y*VGA_NUMCOLS + x + N <= VGA_NUMCOLS*VGA_NUMROWS);
+        ptr = ADDR(x, y);
+        final = ptr + N*2;
+        while (ptr < final) {
+	        *ptr++ = (u8_t) ' ';
+	        *ptr++ = (u8_t) cons->attr;
+	}
+	/*memset(ADDR(x, y), '\0', N * 2);*/
+}
+
+static void x86cons_scroll(struct x86cons *cons)
 {
 	int j;
 
@@ -71,7 +93,7 @@ static void x86cons_scroll(void)
 	}
 
 	/* clear last row */
-	memset(ROW_ADDR(VGA_NUMROWS-1), '\0', VGA_BYTES_PER_ROW);
+        x86cons_clear_area(cons, VGA_NUMROWS-1, 0, VGA_NUMCOLS);
 }
 
 static void x86cons_newline(struct x86cons *cons)
@@ -80,7 +102,7 @@ static void x86cons_newline(struct x86cons *cons)
 
 	/* scroll? */
 	if (cons->y == VGA_NUMROWS - 1) {
-		x86cons_scroll();
+		x86cons_scroll(cons);
 	} else {
 		cons->y++;
 	}
@@ -134,7 +156,7 @@ static void x86cons_updatecurs(struct x86cons *cons)
 
 void x86cons_clear(struct console *cons)
 {
-	memset((void *) VGA_VIDMEM, '\0', VGA_NUMROWS * VGA_BYTES_PER_ROW);
+        x86cons_clear_area(cons->p, 0, 0, VGA_NUMROWS*VGA_NUMCOLS);
 	x86cons_movecurs(cons, 0, 0);
 }
 
@@ -210,10 +232,11 @@ void x86cons_cleartoeol(struct console *cons)
 	struct x86cons *xcons = cons->p;
 
 	int toclear = VGA_NUMCOLS - xcons->x;
-	memset(CUR_ADDR(xcons), '\0', toclear * 2);
+        x86cons_clear_area(xcons, xcons->x, xcons->y, toclear);
 }
 
 static struct console_ops s_x86cons_ops = {
+	/*.init = &x86cons_init,*/
 	.clear = &x86cons_clear,
 	.numrows = &x86cons_numrows,
 	.numcols = &x86cons_numcols,

@@ -3,7 +3,7 @@ include ../common.mak
 VPATH = ../../src/x86 ../../src
 
 ARCH_SRCS = x86_ioport.c x86_cons.c x86_mem.c x86_vm.c x86_int.c x86_cpu.c x86_thread.c \
-	x86_irq.c x86_timer.c
+	x86_irq.c x86_timer.c x86_keyb.c x86_ps2.c
 ASM_SRCS = x86_boot_asm.S x86_cpu_asm.S x86_int_asm.S x86_thread_asm.S
 ALL_SRCS = $(COMMON_SRCS) $(ARCH_SRCS) $(ASM_SRCS)
 
@@ -17,24 +17,33 @@ KERNEL_EXE = kernel/geekos.exe
 
 BOOT_ISO = boot.iso
 
-# On cygwin, use the i386-elf cross gcc and binutils
-ifeq ($(shell echo $$OSTYPE),cygwin)
-CROSS = i386-elf-
+CC = gcc
+TARGET_ARCH = i586-elf
+TEST = 0
+
+ifneq ($(shell which $(TARGET_ARCH)-$(CC)),) # try prefered arch
+    CC := $(TARGET_ARCH)-$(CC)
+    TEST = 1
+else ifneq ($(shell which i386-elf-$(CC)),) # try fallback to i386
+    CC := i386-elf-$(CC)
+    TEST = 2
+else # fallback to not using cross compiler
+    TEST = 3
 endif
 
 # If we're on an x86_64 system, force 32-bit code generation
 ifeq ($(shell uname -m),x86_64)
-GCC_FORCE_32BIT = -m32
+    GCC_FORCE_32BIT = -m32
 endif
 
 CFLAGS = -Wall -Werror -fno-builtin -fno-stack-protector
 DEFS = -DKERNEL
 INC = -I../../include/x86 -I../../include
 
-CC = $(CROSS)gcc
+#CC = $(CROSS)gcc
 #CC = /home/daveho/linux/tcc/bin/tcc
 #CC = tcc
-DEP_CC = $(CROSS)gcc
+DEP_CC = $(CC)
 
 kernel/%.o : kernel/%.c
 	$(CC) -c $(CFLAGS) $(GCC_FORCE_32BIT) $(DEFS) $(INC) -o kernel/$*.o $<
@@ -49,14 +58,26 @@ $(KERNEL_EXE) : $(KERNEL_OBJS)
 		-o $@ $(KERNEL_OBJS) \
 		> $(@:%.exe=%.map)
 
-$(BOOT_ISO) : $(KERNEL_EXE)
+# prefere using grub-mkrescue if it exists since the alternative way
+# produces an iso image that did not boot on some architectures
+ifneq ($(shell which grub-mkrescue),)
+    MK_ISO_COMMAND = \
+          cp $(KERNEL_EXE) iso/boot/; \
+          cp grub.cfg iso/boot/grub; \
+	  grub-mkrescue
+else
+    MK_ISO_COMMAND = \
+	    cp boot/stage2_eltorito iso/boot/grub; \
+	    cp $(KERNEL_EXE) iso; \
+	    cp cdmenu.lst iso/boot/grub/menu.lst; \
+	    mkisofs -R -b boot/grub/stage2_eltorito \
+		-no-emul-boot -boot-load-size 4 -boot-info-table
+endif
+
+$(BOOT_ISO): $(KERNEL_EXE)
 	rm -rf iso
 	mkdir -p iso/boot/grub
-	cp boot/stage2_eltorito iso/boot/grub
-	cp $(KERNEL_EXE) iso
-	cp cdmenu.lst iso/boot/grub/menu.lst
-	mkisofs -R -b boot/grub/stage2_eltorito \
-		-no-emul-boot -boot-load-size 4 -boot-info-table -o $(BOOT_ISO) iso
+	$(MK_ISO_COMMAND) -o $@ iso
 
 clean :
 	rm -f $(KERNEL_OBJS)
