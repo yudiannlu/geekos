@@ -257,14 +257,9 @@ void thread_park(struct thread_queue *queue)
  */
 void thread_wakeup(struct thread_queue *queue)
 {
-	struct thread *thread;
-	KASSERT(!int_enabled());
-
 	/* remove all threads from queue, make them runnable */
-	while (!thread_queue_is_empty(queue)) {
-		thread = thread_queue_remove_first(queue);
-		thread_make_runnable(thread);
-	}
+	while (!thread_queue_is_empty(queue))
+                thread_wakeup_one(queue);
 }
 
 /*
@@ -275,7 +270,7 @@ void thread_wakeup_one(struct thread_queue *queue)
 	KASSERT(!int_enabled());
 	struct thread *thread = thread_queue_remove_first(queue);
 	if (thread) {
-		cons_printf("waking up thread %p\n", thread);
+		/*cons_printf("waking up thread %p\n", thread);*/
 		thread_make_runnable(thread);
 	}
 }

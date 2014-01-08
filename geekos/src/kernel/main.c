@@ -2,6 +2,8 @@
  * GeekOS entry point and main function
  * Copyright (C) 2001-2008, David H. Hovemeyer <david.hovemeyer@gmail.com>
  *
+ * modified: Matthias Aechtner (2014)
+ *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
  * published by the Free Software Foundation.
@@ -27,6 +29,7 @@
 #include <geekos/thread.h>
 #include <geekos/workqueue.h>
 #include <geekos/timer.h>
+#include <geekos/keyboard.h>
 
 static void test_thread(ulong_t arg)
 {
@@ -53,6 +56,8 @@ static void busy_thread(ulong_t arg)
 
 void geekos_main(u32_t loader_magic, struct multiboot_info *boot_record)
 {
+        u16_t keycode;
+
 	/* Initialize kernel */
 	mem_clear_bss();
 	cons_init();
@@ -66,6 +71,7 @@ void geekos_main(u32_t loader_magic, struct multiboot_info *boot_record)
 	thread_init();
 	workqueue_init();
 	timer_init();
+	keyboard_init();
 
 	/* TODO: spawn init process */
 	{
@@ -81,9 +87,15 @@ void geekos_main(u32_t loader_magic, struct multiboot_info *boot_record)
 	thread_create(&busy_thread, 0, THREAD_DETACHED);
 
 	/* see if timer is ticking */
+	busy_wait(180);
+	cons_printf("wait ...\n");
+	busy_wait(180);
+	cons_printf("$ ");
+
 	while (1) {
-		busy_wait(180);
-		cons_printf("B");
+                keycode = wait_for_key();
+                if ('a' <= keycode && keycode <= 'z')
+			cons_printf("%c", keycode);
 	}
 
 #if 0

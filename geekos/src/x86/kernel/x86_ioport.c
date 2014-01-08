@@ -3,6 +3,8 @@
  *
  * Copyright (C) 2001-2008, David H. Hovemeyer <david.hovemeyer@gmail.com>
  *
+ * modified: Matthias Aechtner (2014)
+ *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
  * published by the Free Software Foundation.
@@ -30,4 +32,10 @@ u8_t ioport_inb(u16_t port)
 void ioport_outb(u16_t port, u8_t value)
 {
 	__asm__ __volatile__ ("outb %b0, %w1" : : "a" (value), "Nd" (port));
+}
+
+void ioport_delay(void)
+{
+    u8_t value = 0;
+    __asm__ __volatile__ ("outb %0, $0x80" : : "a" (value));
 }

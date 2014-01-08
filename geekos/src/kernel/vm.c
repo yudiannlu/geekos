@@ -204,7 +204,7 @@ int vm_lock_page(struct vm_pagecache *obj, u32_t page_num, struct frame **p_fram
  */
 int vm_unlock_page(struct vm_pagecache *obj, struct frame *frame)
 {
-	int rc;
+	int rc = 0;
 
 	mutex_lock(&obj->lock);
 
