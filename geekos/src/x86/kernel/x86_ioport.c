@@ -29,9 +29,33 @@ u8_t ioport_inb(u16_t port)
 	return value;
 }
 
+u16_t ioport_inw(u16_t port)
+{
+	u16_t value;
+	__asm__ __volatile__ ("inw %w1, %w0" : "=a" (value) : "Nd" (port));
+	return value;
+}
+
+u32_t ioport_inl(u16_t port)
+{
+	u32_t value;
+	__asm__ __volatile__ ("inl %w1, %0" : "=a" (value) : "Nd" (port));
+	return value;
+}
+
 void ioport_outb(u16_t port, u8_t value)
 {
 	__asm__ __volatile__ ("outb %b0, %w1" : : "a" (value), "Nd" (port));
+}
+
+void ioport_outw(u16_t port, u16_t value)
+{
+	__asm__ __volatile__ ("outw %w0, %w1" : : "a" (value), "Nd" (port));
+}
+
+void ioport_outl(u16_t port, u32_t value)
+{
+	__asm__ __volatile__ ("outl %0, %w1" : : "a" (value), "Nd" (port));
 }
 
 void ioport_delay(void)

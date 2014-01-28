@@ -29,7 +29,11 @@
 #include <geekos/thread.h>
 #include <geekos/workqueue.h>
 #include <geekos/timer.h>
+#include <geekos/ramdisk.h>
+#include <geekos/blockdev_pager.h>
 #include <geekos/keyboard.h>
+
+#include <arch/ata.h>
 
 static void test_thread(ulong_t arg)
 {
@@ -56,7 +60,10 @@ static void busy_thread(ulong_t arg)
 
 void geekos_main(u32_t loader_magic, struct multiboot_info *boot_record)
 {
-        u16_t keycode;
+	u16_t keycode;
+	struct vm_pager *vmp;
+	struct blockdev *ramdsk;
+	char ramdsk_buf[1024];
 
 	/* Initialize kernel */
 	mem_clear_bss();
@@ -70,7 +77,12 @@ void geekos_main(u32_t loader_magic, struct multiboot_info *boot_record)
 	irq_init();
 	thread_init();
 	workqueue_init();
+	ata_init();
 	timer_init();
+	ramdsk = ramdisk_create(ramdsk_buf, 1024);
+	cons_printf("Created block device pager .....%s\n",
+			blockdev_pager_create(ramdsk, lba_from_num(0), 2, &vmp) ?
+			" [Failed]" : ".... [OK]");
 	keyboard_init();
 
 	/* TODO: spawn init process */
@@ -94,7 +106,7 @@ void geekos_main(u32_t loader_magic, struct multiboot_info *boot_record)
 
 	while (1) {
                 keycode = wait_for_key();
-                if ('a' <= keycode && keycode <= 'z')
+                if (' ' <= keycode && keycode <= '~')
 			cons_printf("%c", keycode);
 	}
 
