@@ -3,7 +3,7 @@ include ../common.mak
 VPATH = ../../src/x86 ../../src
 
 ARCH_SRCS = x86_ioport.c x86_cons.c x86_mem.c x86_vm.c x86_int.c x86_cpu.c x86_thread.c \
-	x86_irq.c x86_timer.c x86_keyb.c x86_ps2.c
+	x86_irq.c x86_timer.c x86_keyb.c x86_ps2.c x86_ata.c
 ASM_SRCS = x86_boot_asm.S x86_cpu_asm.S x86_int_asm.S x86_thread_asm.S
 ALL_SRCS = $(COMMON_SRCS) $(ARCH_SRCS) $(ASM_SRCS)
 

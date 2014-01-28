@@ -22,7 +22,6 @@
 
 #include <stddef.h>
 #include <geekos/types.h>
-#include <geekos/blockdev.h>
 
 /* block size data type */
 typedef struct { unsigned size; } blocksize_t;
